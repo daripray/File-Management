@@ -30,10 +30,10 @@
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle13 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle14 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle15 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle16 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
             this.tab = new System.Windows.Forms.TabControl();
             this.tabMain = new System.Windows.Forms.TabPage();
             this.panel1 = new System.Windows.Forms.Panel();
@@ -80,12 +80,16 @@
             this.btnSourceAdd = new System.Windows.Forms.Button();
             this.btnSourceClear = new System.Windows.Forms.Button();
             this.dgvListFiles = new System.Windows.Forms.DataGridView();
-            this.path = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.no = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.status = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.path = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.file_name = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.sizeView = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.sizeBytes = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.date_taken = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.media_created = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.date_created = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.date_modified = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.status = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.Action = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.tabLog = new System.Windows.Forms.TabPage();
             this.btnClearLog = new System.Windows.Forms.Button();
@@ -118,7 +122,7 @@
             this.tab.Location = new System.Drawing.Point(0, 0);
             this.tab.Name = "tab";
             this.tab.SelectedIndex = 0;
-            this.tab.Size = new System.Drawing.Size(1073, 608);
+            this.tab.Size = new System.Drawing.Size(1029, 608);
             this.tab.TabIndex = 0;
             // 
             // tabMain
@@ -128,7 +132,7 @@
             this.tabMain.Location = new System.Drawing.Point(4, 25);
             this.tabMain.Name = "tabMain";
             this.tabMain.Padding = new System.Windows.Forms.Padding(3);
-            this.tabMain.Size = new System.Drawing.Size(1065, 579);
+            this.tabMain.Size = new System.Drawing.Size(1021, 579);
             this.tabMain.TabIndex = 2;
             this.tabMain.Text = "Main";
             this.tabMain.UseVisualStyleBackColor = true;
@@ -148,7 +152,7 @@
             this.panel1.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.panel1.Location = new System.Drawing.Point(3, 3);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(1059, 573);
+            this.panel1.Size = new System.Drawing.Size(1015, 573);
             this.panel1.TabIndex = 0;
             // 
             // btnResume
@@ -157,7 +161,7 @@
             this.btnResume.Enabled = false;
             this.btnResume.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnResume.ForeColor = System.Drawing.Color.Blue;
-            this.btnResume.Location = new System.Drawing.Point(859, 515);
+            this.btnResume.Location = new System.Drawing.Point(815, 515);
             this.btnResume.Name = "btnResume";
             this.btnResume.Size = new System.Drawing.Size(85, 49);
             this.btnResume.TabIndex = 17;
@@ -170,7 +174,7 @@
             this.btnPause.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnPause.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnPause.ForeColor = System.Drawing.Color.Orange;
-            this.btnPause.Location = new System.Drawing.Point(778, 515);
+            this.btnPause.Location = new System.Drawing.Point(734, 515);
             this.btnPause.Name = "btnPause";
             this.btnPause.Size = new System.Drawing.Size(75, 49);
             this.btnPause.TabIndex = 16;
@@ -185,7 +189,7 @@
             this.btnStop.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
             this.btnStop.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnStop.ForeColor = System.Drawing.Color.Red;
-            this.btnStop.Location = new System.Drawing.Point(950, 515);
+            this.btnStop.Location = new System.Drawing.Point(906, 515);
             this.btnStop.Name = "btnStop";
             this.btnStop.Size = new System.Drawing.Size(91, 49);
             this.btnStop.TabIndex = 15;
@@ -201,7 +205,7 @@
             this.gbProcessBy.Controls.Add(this.rd_process_by_date_created);
             this.gbProcessBy.Location = new System.Drawing.Point(18, 341);
             this.gbProcessBy.Name = "gbProcessBy";
-            this.gbProcessBy.Size = new System.Drawing.Size(1023, 50);
+            this.gbProcessBy.Size = new System.Drawing.Size(979, 50);
             this.gbProcessBy.TabIndex = 14;
             this.gbProcessBy.TabStop = false;
             this.gbProcessBy.Text = "Process By";
@@ -236,7 +240,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.progressBar1.Location = new System.Drawing.Point(18, 486);
             this.progressBar1.Name = "progressBar1";
-            this.progressBar1.Size = new System.Drawing.Size(1023, 23);
+            this.progressBar1.Size = new System.Drawing.Size(979, 23);
             this.progressBar1.TabIndex = 13;
             // 
             // btnMove
@@ -290,7 +294,7 @@
             this.groupBoxTarget.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.groupBoxTarget.Location = new System.Drawing.Point(18, 397);
             this.groupBoxTarget.Name = "groupBoxTarget";
-            this.groupBoxTarget.Size = new System.Drawing.Size(1023, 83);
+            this.groupBoxTarget.Size = new System.Drawing.Size(979, 83);
             this.groupBoxTarget.TabIndex = 5;
             this.groupBoxTarget.TabStop = false;
             this.groupBoxTarget.Text = "Target";
@@ -321,7 +325,6 @@
             this.rd_then_path_None.Name = "rd_then_path_None";
             this.rd_then_path_None.Size = new System.Drawing.Size(58, 20);
             this.rd_then_path_None.TabIndex = 10;
-            this.rd_then_path_None.TabStop = true;
             this.rd_then_path_None.Text = "None";
             this.rd_then_path_None.UseVisualStyleBackColor = true;
             // 
@@ -333,7 +336,6 @@
             this.rd_then_path_year.Name = "rd_then_path_year";
             this.rd_then_path_year.Size = new System.Drawing.Size(61, 20);
             this.rd_then_path_year.TabIndex = 9;
-            this.rd_then_path_year.TabStop = true;
             this.rd_then_path_year.Text = "\\yyyy\\";
             this.rd_then_path_year.UseVisualStyleBackColor = true;
             // 
@@ -346,7 +348,6 @@
             this.rd_then_path_year_month_day_2.Name = "rd_then_path_year_month_day_2";
             this.rd_then_path_year_month_day_2.Size = new System.Drawing.Size(193, 20);
             this.rd_then_path_year_month_day_2.TabIndex = 8;
-            this.rd_then_path_year_month_day_2.TabStop = true;
             this.rd_then_path_year_month_day_2.Text = "\\yyyy\\yyyy-mm\\yyyy-mm-dd";
             this.rd_then_path_year_month_day_2.UseVisualStyleBackColor = false;
             // 
@@ -358,13 +359,13 @@
             this.rd_then_path_year_month_2.Name = "rd_then_path_year_month_2";
             this.rd_then_path_year_month_2.Size = new System.Drawing.Size(119, 20);
             this.rd_then_path_year_month_2.TabIndex = 7;
-            this.rd_then_path_year_month_2.TabStop = true;
             this.rd_then_path_year_month_2.Text = "\\yyyy\\yyyy-mm\\";
             this.rd_then_path_year_month_2.UseVisualStyleBackColor = true;
             // 
             // rd_then_path_year_month_day
             // 
             this.rd_then_path_year_month_day.AutoSize = true;
+            this.rd_then_path_year_month_day.Checked = true;
             this.rd_then_path_year_month_day.Enabled = false;
             this.rd_then_path_year_month_day.Location = new System.Drawing.Point(348, 49);
             this.rd_then_path_year_month_day.Name = "rd_then_path_year_month_day";
@@ -382,7 +383,6 @@
             this.rd_then_path_year_month.Name = "rd_then_path_year_month";
             this.rd_then_path_year_month.Size = new System.Drawing.Size(87, 20);
             this.rd_then_path_year_month.TabIndex = 7;
-            this.rd_then_path_year_month.TabStop = true;
             this.rd_then_path_year_month.Text = "\\yyyy\\mm\\";
             this.rd_then_path_year_month.UseVisualStyleBackColor = true;
             // 
@@ -391,7 +391,7 @@
             this.btnDestClear.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnDestClear.Enabled = false;
             this.btnDestClear.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnDestClear.Location = new System.Drawing.Point(972, 20);
+            this.btnDestClear.Location = new System.Drawing.Point(928, 20);
             this.btnDestClear.Name = "btnDestClear";
             this.btnDestClear.Size = new System.Drawing.Size(34, 24);
             this.btnDestClear.TabIndex = 5;
@@ -404,7 +404,7 @@
             this.btnDestAdd.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnDestAdd.Enabled = false;
             this.btnDestAdd.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnDestAdd.Location = new System.Drawing.Point(932, 20);
+            this.btnDestAdd.Location = new System.Drawing.Point(888, 20);
             this.btnDestAdd.Name = "btnDestAdd";
             this.btnDestAdd.Size = new System.Drawing.Size(34, 24);
             this.btnDestAdd.TabIndex = 4;
@@ -419,8 +419,9 @@
             this.txt_dest_path.Enabled = false;
             this.txt_dest_path.Location = new System.Drawing.Point(121, 21);
             this.txt_dest_path.Name = "txt_dest_path";
-            this.txt_dest_path.Size = new System.Drawing.Size(805, 22);
+            this.txt_dest_path.Size = new System.Drawing.Size(761, 22);
             this.txt_dest_path.TabIndex = 2;
+            this.txt_dest_path.Text = "D:\\TESTING";
             this.txt_dest_path.TextChanged += new System.EventHandler(this.txt_dest_path_TextChanged);
             // 
             // groupBoxSource
@@ -437,7 +438,7 @@
             this.groupBoxSource.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.groupBoxSource.Location = new System.Drawing.Point(18, 12);
             this.groupBoxSource.Name = "groupBoxSource";
-            this.groupBoxSource.Size = new System.Drawing.Size(1023, 323);
+            this.groupBoxSource.Size = new System.Drawing.Size(979, 323);
             this.groupBoxSource.TabIndex = 4;
             this.groupBoxSource.TabStop = false;
             this.groupBoxSource.Text = "Source";
@@ -449,7 +450,7 @@
             this.btnSourceScan.Enabled = false;
             this.btnSourceScan.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnSourceScan.Image = ((System.Drawing.Image)(resources.GetObject("btnSourceScan.Image")));
-            this.btnSourceScan.Location = new System.Drawing.Point(932, 56);
+            this.btnSourceScan.Location = new System.Drawing.Point(888, 56);
             this.btnSourceScan.Name = "btnSourceScan";
             this.btnSourceScan.Size = new System.Drawing.Size(74, 133);
             this.btnSourceScan.TabIndex = 4;
@@ -478,7 +479,7 @@
             this.groupBoxImages.Controls.Add(this.btnResetDocuments);
             this.groupBoxImages.Location = new System.Drawing.Point(18, 50);
             this.groupBoxImages.Name = "groupBoxImages";
-            this.groupBoxImages.Size = new System.Drawing.Size(908, 173);
+            this.groupBoxImages.Size = new System.Drawing.Size(864, 173);
             this.groupBoxImages.TabIndex = 3;
             this.groupBoxImages.TabStop = false;
             this.groupBoxImages.Text = "File Format";
@@ -512,7 +513,7 @@
             this.btnResetException.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnResetException.Enabled = false;
             this.btnResetException.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnResetException.Location = new System.Drawing.Point(866, 130);
+            this.btnResetException.Location = new System.Drawing.Point(822, 130);
             this.btnResetException.Name = "btnResetException";
             this.btnResetException.Size = new System.Drawing.Size(34, 24);
             this.btnResetException.TabIndex = 5;
@@ -525,7 +526,7 @@
             this.btnResetOptional.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnResetOptional.Enabled = false;
             this.btnResetOptional.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnResetOptional.Location = new System.Drawing.Point(866, 103);
+            this.btnResetOptional.Location = new System.Drawing.Point(822, 103);
             this.btnResetOptional.Name = "btnResetOptional";
             this.btnResetOptional.Size = new System.Drawing.Size(34, 24);
             this.btnResetOptional.TabIndex = 5;
@@ -540,7 +541,7 @@
             this.txt_format_exception.Enabled = false;
             this.txt_format_exception.Location = new System.Drawing.Point(103, 132);
             this.txt_format_exception.Name = "txt_format_exception";
-            this.txt_format_exception.Size = new System.Drawing.Size(755, 22);
+            this.txt_format_exception.Size = new System.Drawing.Size(711, 22);
             this.txt_format_exception.TabIndex = 2;
             // 
             // txt_format_optional
@@ -550,7 +551,7 @@
             this.txt_format_optional.Enabled = false;
             this.txt_format_optional.Location = new System.Drawing.Point(103, 104);
             this.txt_format_optional.Name = "txt_format_optional";
-            this.txt_format_optional.Size = new System.Drawing.Size(755, 22);
+            this.txt_format_optional.Size = new System.Drawing.Size(711, 22);
             this.txt_format_optional.TabIndex = 2;
             // 
             // txt_format_images
@@ -560,7 +561,7 @@
             this.txt_format_images.Enabled = false;
             this.txt_format_images.Location = new System.Drawing.Point(103, 19);
             this.txt_format_images.Name = "txt_format_images";
-            this.txt_format_images.Size = new System.Drawing.Size(755, 22);
+            this.txt_format_images.Size = new System.Drawing.Size(711, 22);
             this.txt_format_images.TabIndex = 0;
             this.txt_format_images.Text = "jpg jpeg jpe jfif png bmp ico gif tif tiff heif hdr webp dib heic hif svg";
             // 
@@ -571,7 +572,7 @@
             this.txt_format_videos.Enabled = false;
             this.txt_format_videos.Location = new System.Drawing.Point(103, 47);
             this.txt_format_videos.Name = "txt_format_videos";
-            this.txt_format_videos.Size = new System.Drawing.Size(755, 22);
+            this.txt_format_videos.Size = new System.Drawing.Size(711, 22);
             this.txt_format_videos.TabIndex = 0;
             this.txt_format_videos.Text = "3gp avi amv flv mkv mp4 wmp webm";
             // 
@@ -590,6 +591,8 @@
             // cbVideos
             // 
             this.cbVideos.AutoSize = true;
+            this.cbVideos.Checked = true;
+            this.cbVideos.CheckState = System.Windows.Forms.CheckState.Checked;
             this.cbVideos.Enabled = false;
             this.cbVideos.Location = new System.Drawing.Point(6, 49);
             this.cbVideos.Name = "cbVideos";
@@ -602,6 +605,8 @@
             // cbImages
             // 
             this.cbImages.AutoSize = true;
+            this.cbImages.Checked = true;
+            this.cbImages.CheckState = System.Windows.Forms.CheckState.Checked;
             this.cbImages.Enabled = false;
             this.cbImages.Location = new System.Drawing.Point(6, 21);
             this.cbImages.Name = "cbImages";
@@ -618,7 +623,7 @@
             this.txt_format_documents.Enabled = false;
             this.txt_format_documents.Location = new System.Drawing.Point(103, 75);
             this.txt_format_documents.Name = "txt_format_documents";
-            this.txt_format_documents.Size = new System.Drawing.Size(755, 22);
+            this.txt_format_documents.Size = new System.Drawing.Size(711, 22);
             this.txt_format_documents.TabIndex = 0;
             this.txt_format_documents.Text = "txt rtf doc docx dot dotx htm html mht mhtml odt pdf xml";
             // 
@@ -626,7 +631,7 @@
             // 
             this.btnResetImages.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnResetImages.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnResetImages.Location = new System.Drawing.Point(866, 18);
+            this.btnResetImages.Location = new System.Drawing.Point(822, 18);
             this.btnResetImages.Name = "btnResetImages";
             this.btnResetImages.Size = new System.Drawing.Size(34, 24);
             this.btnResetImages.TabIndex = 1;
@@ -638,7 +643,7 @@
             // 
             this.btnResetVideos.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnResetVideos.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnResetVideos.Location = new System.Drawing.Point(866, 46);
+            this.btnResetVideos.Location = new System.Drawing.Point(822, 46);
             this.btnResetVideos.Name = "btnResetVideos";
             this.btnResetVideos.Size = new System.Drawing.Size(34, 24);
             this.btnResetVideos.TabIndex = 1;
@@ -650,7 +655,7 @@
             // 
             this.btnResetDocuments.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnResetDocuments.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnResetDocuments.Location = new System.Drawing.Point(866, 74);
+            this.btnResetDocuments.Location = new System.Drawing.Point(822, 74);
             this.btnResetDocuments.Name = "btnResetDocuments";
             this.btnResetDocuments.Size = new System.Drawing.Size(34, 24);
             this.btnResetDocuments.TabIndex = 1;
@@ -665,15 +670,16 @@
             this.txt_source_path.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txt_source_path.Location = new System.Drawing.Point(18, 21);
             this.txt_source_path.Name = "txt_source_path";
-            this.txt_source_path.Size = new System.Drawing.Size(908, 22);
+            this.txt_source_path.Size = new System.Drawing.Size(864, 22);
             this.txt_source_path.TabIndex = 2;
+            this.txt_source_path.Text = "H:\\2025.05";
             this.txt_source_path.TextChanged += new System.EventHandler(this.txt_source_path_TextChanged);
             // 
             // btnSourceAdd
             // 
             this.btnSourceAdd.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnSourceAdd.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnSourceAdd.Location = new System.Drawing.Point(932, 20);
+            this.btnSourceAdd.Location = new System.Drawing.Point(888, 20);
             this.btnSourceAdd.Name = "btnSourceAdd";
             this.btnSourceAdd.Size = new System.Drawing.Size(34, 24);
             this.btnSourceAdd.TabIndex = 1;
@@ -686,7 +692,7 @@
             this.btnSourceClear.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnSourceClear.Enabled = false;
             this.btnSourceClear.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnSourceClear.Location = new System.Drawing.Point(972, 20);
+            this.btnSourceClear.Location = new System.Drawing.Point(928, 20);
             this.btnSourceClear.Name = "btnSourceClear";
             this.btnSourceClear.Size = new System.Drawing.Size(34, 24);
             this.btnSourceClear.TabIndex = 0;
@@ -702,58 +708,78 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.dgvListFiles.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
-            this.path,
             this.no,
-            this.status,
+            this.path,
             this.file_name,
+            this.sizeView,
+            this.sizeBytes,
+            this.date_taken,
+            this.media_created,
             this.date_created,
             this.date_modified,
+            this.status,
             this.Action});
             this.dgvListFiles.Cursor = System.Windows.Forms.Cursors.Default;
             this.dgvListFiles.Location = new System.Drawing.Point(18, 229);
             this.dgvListFiles.Name = "dgvListFiles";
             this.dgvListFiles.ReadOnly = true;
             this.dgvListFiles.ShowEditingIcon = false;
-            this.dgvListFiles.Size = new System.Drawing.Size(988, 79);
+            this.dgvListFiles.Size = new System.Drawing.Size(944, 79);
             this.dgvListFiles.TabIndex = 1;
             this.dgvListFiles.TabStop = false;
+            this.dgvListFiles.CellClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvListFiles_CellClick);
+            this.dgvListFiles.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvListFiles_CellContentClick);
             this.dgvListFiles.CellMouseEnter += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvListFiles_CellMouseEnter);
             this.dgvListFiles.CellMouseLeave += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvListFiles_CellMouseLeave);
             // 
-            // path
-            // 
-            dataGridViewCellStyle13.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            this.path.DefaultCellStyle = dataGridViewCellStyle13;
-            this.path.HeaderText = "path";
-            this.path.Name = "path";
-            this.path.ReadOnly = true;
-            this.path.Visible = false;
-            // 
             // no
             // 
-            dataGridViewCellStyle14.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
-            this.no.DefaultCellStyle = dataGridViewCellStyle14;
+            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
+            this.no.DefaultCellStyle = dataGridViewCellStyle1;
             this.no.HeaderText = "No";
             this.no.Name = "no";
             this.no.ReadOnly = true;
             this.no.Width = 50;
             // 
-            // status
+            // path
             // 
-            this.status.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.DisplayedCells;
-            dataGridViewCellStyle15.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            this.status.DefaultCellStyle = dataGridViewCellStyle15;
-            this.status.HeaderText = "Status";
-            this.status.Name = "status";
-            this.status.ReadOnly = true;
-            this.status.Width = 69;
+            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.path.DefaultCellStyle = dataGridViewCellStyle2;
+            this.path.HeaderText = "File Location";
+            this.path.Name = "path";
+            this.path.ReadOnly = true;
             // 
             // file_name
             // 
-            this.file_name.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
             this.file_name.HeaderText = "File Name";
             this.file_name.Name = "file_name";
             this.file_name.ReadOnly = true;
+            // 
+            // sizeView
+            // 
+            this.sizeView.HeaderText = "Size Auto";
+            this.sizeView.Name = "sizeView";
+            this.sizeView.ReadOnly = true;
+            // 
+            // sizeBytes
+            // 
+            this.sizeBytes.HeaderText = "Size Bytes";
+            this.sizeBytes.Name = "sizeBytes";
+            this.sizeBytes.ReadOnly = true;
+            // 
+            // date_taken
+            // 
+            this.date_taken.HeaderText = "Date Taken (Camera)";
+            this.date_taken.Name = "date_taken";
+            this.date_taken.ReadOnly = true;
+            this.date_taken.Width = 150;
+            // 
+            // media_created
+            // 
+            this.media_created.HeaderText = "Media Created (Movie)";
+            this.media_created.Name = "media_created";
+            this.media_created.ReadOnly = true;
+            this.media_created.Width = 180;
             // 
             // date_created
             // 
@@ -769,10 +795,20 @@
             this.date_modified.ReadOnly = true;
             this.date_modified.Width = 150;
             // 
+            // status
+            // 
+            this.status.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.DisplayedCells;
+            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.status.DefaultCellStyle = dataGridViewCellStyle3;
+            this.status.HeaderText = "Status";
+            this.status.Name = "status";
+            this.status.ReadOnly = true;
+            this.status.Width = 69;
+            // 
             // Action
             // 
-            dataGridViewCellStyle16.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            this.Action.DefaultCellStyle = dataGridViewCellStyle16;
+            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.Action.DefaultCellStyle = dataGridViewCellStyle4;
             this.Action.HeaderText = "Action";
             this.Action.Name = "Action";
             this.Action.ReadOnly = true;
@@ -786,7 +822,7 @@
             this.tabLog.Location = new System.Drawing.Point(4, 25);
             this.tabLog.Name = "tabLog";
             this.tabLog.Padding = new System.Windows.Forms.Padding(3);
-            this.tabLog.Size = new System.Drawing.Size(1065, 579);
+            this.tabLog.Size = new System.Drawing.Size(1354, 579);
             this.tabLog.TabIndex = 1;
             this.tabLog.Text = "Log";
             this.tabLog.UseVisualStyleBackColor = true;
@@ -823,7 +859,7 @@
             this.tabAbout.Location = new System.Drawing.Point(4, 25);
             this.tabAbout.Name = "tabAbout";
             this.tabAbout.Padding = new System.Windows.Forms.Padding(3);
-            this.tabAbout.Size = new System.Drawing.Size(1065, 579);
+            this.tabAbout.Size = new System.Drawing.Size(1354, 579);
             this.tabAbout.TabIndex = 0;
             this.tabAbout.Text = "About";
             this.tabAbout.UseVisualStyleBackColor = true;
@@ -834,7 +870,7 @@
             this.panel2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel2.Location = new System.Drawing.Point(3, 3);
             this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(1059, 573);
+            this.panel2.Size = new System.Drawing.Size(1348, 573);
             this.panel2.TabIndex = 0;
             // 
             // listBox1
@@ -846,14 +882,14 @@
             "Create By: daripray"});
             this.listBox1.Location = new System.Drawing.Point(0, 0);
             this.listBox1.Name = "listBox1";
-            this.listBox1.Size = new System.Drawing.Size(1059, 573);
+            this.listBox1.Size = new System.Drawing.Size(1348, 573);
             this.listBox1.TabIndex = 0;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1073, 608);
+            this.ClientSize = new System.Drawing.Size(1029, 608);
             this.Controls.Add(this.tab);
             this.Cursor = System.Windows.Forms.Cursors.Default;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
@@ -928,13 +964,6 @@
         private System.Windows.Forms.CheckBox cbException;
         private System.Windows.Forms.Button btnResetException;
         private System.Windows.Forms.TextBox txt_format_exception;
-        private System.Windows.Forms.DataGridViewTextBoxColumn path;
-        private System.Windows.Forms.DataGridViewTextBoxColumn no;
-        private System.Windows.Forms.DataGridViewTextBoxColumn status;
-        private System.Windows.Forms.DataGridViewTextBoxColumn file_name;
-        private System.Windows.Forms.DataGridViewTextBoxColumn date_created;
-        private System.Windows.Forms.DataGridViewTextBoxColumn date_modified;
-        private System.Windows.Forms.DataGridViewTextBoxColumn Action;
         private System.Windows.Forms.GroupBox gbProcessBy;
         private System.Windows.Forms.RadioButton rd_process_by_date_modified;
         private System.Windows.Forms.RadioButton rd_process_by_date_created;
@@ -943,6 +972,17 @@
         private System.Windows.Forms.Button btnStop;
         private System.Windows.Forms.Button btnResume;
         private System.Windows.Forms.Button btnPause;
+        private System.Windows.Forms.DataGridViewTextBoxColumn no;
+        private System.Windows.Forms.DataGridViewTextBoxColumn path;
+        private System.Windows.Forms.DataGridViewTextBoxColumn file_name;
+        private System.Windows.Forms.DataGridViewTextBoxColumn sizeView;
+        private System.Windows.Forms.DataGridViewTextBoxColumn sizeBytes;
+        private System.Windows.Forms.DataGridViewTextBoxColumn date_taken;
+        private System.Windows.Forms.DataGridViewTextBoxColumn media_created;
+        private System.Windows.Forms.DataGridViewTextBoxColumn date_created;
+        private System.Windows.Forms.DataGridViewTextBoxColumn date_modified;
+        private System.Windows.Forms.DataGridViewTextBoxColumn status;
+        private System.Windows.Forms.DataGridViewTextBoxColumn Action;
     }
 }
 

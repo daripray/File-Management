@@ -1,17 +1,29 @@
-﻿using System;
+﻿using MetadataExtractor;
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.IO;
+using Dir = System.IO.Directory;
 using System.Linq;
+using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Reflection;
-using System.Collections;
 using System.Windows.Input;
-using System.Threading;
+
+using Shell32;
+using System.Drawing.Imaging;
+
+using Meta = MetadataExtractor;
+using MetaDir = MetadataExtractor.Directory;
+using MetaExif = MetadataExtractor.Formats.Exif;
+
+using File_Management.Interface;
+using File_Management.Helper;
 
 namespace File_Management
 {
@@ -35,6 +47,8 @@ namespace File_Management
         List<String> tempResFiles = new List<String> { };
 
         private String[] arrStatus;
+
+        private readonly IFileProperty _fileProperty = new FileProperty();
 
         BackgroundWorker worker = new BackgroundWorker();
         FormDetail fd = new FormDetail();
@@ -113,14 +127,14 @@ namespace File_Management
                         }
 
                         string f = resFiles[i];
-
-                        final_dest_path = txt_dest_path.Text;
-                        myDate = rd_process_by_date_modified.Checked ? File.GetLastWriteTime(f) : File.(f);
-
+                        myDate = GetImageDateTaken(f) ??
+                                          (rd_process_by_date_modified.Checked ? File.GetLastWriteTime(f) : File.GetCreationTime(f));
 
                         year = myDate.ToString("yyyy");
                         month = myDate.ToString("MM");
                         day = myDate.ToString("dd");
+
+                        final_dest_path = txt_dest_path.Text;
 
                         if (rd_then_path_year.Checked)
                             final_dest_path = Path.Combine(final_dest_path, year);
@@ -133,9 +147,9 @@ namespace File_Management
                         if (rd_then_path_year_month_day_2.Checked)
                             final_dest_path = Path.Combine(final_dest_path, year, $"{year}-{month}", $"{year}-{month}-{day}");
 
-                        if (!Directory.Exists(final_dest_path))
+                        if (!Dir.Exists(final_dest_path))
                         {
-                            Directory.CreateDirectory(final_dest_path);
+                            Dir.CreateDirectory(final_dest_path);
                             listLog.Invoke((Action)(() => listLog.Items.Add("Create directory: " + final_dest_path)));
                         }
 
@@ -168,7 +182,7 @@ namespace File_Management
                         }
                         catch (Exception ex)
                         {
-                            listLog.Invoke((Action)(() => listLog.Items.Add($"Error {(args.opt == 0 ? "Copy" : "Move")}: {f} to {final_dest}")));
+                            listLog.Invoke((Action)(() => listLog.Items.Add($"❌ Error {(args.opt == 0 ? "Copy" : "Move")}: {f} to {final_dest}")));
                             listLog.Invoke((Action)(() => listLog.Items.Add($"Error Copying {f}: {ex.Message}")));
                             dgvListFiles.Invoke((Action)(() => dgvListFiles[2, i].Value = "Error"));
                         }
@@ -178,9 +192,39 @@ namespace File_Management
                 }
                 catch (Exception ex)
                 {
-                    listLog.Invoke((Action)(() => listLog.Items.Add("Unknown Error: " + ex.Message)));
+                    listLog.Invoke((Action)(() => listLog.Items.Add("❌ Unknown Error: " + ex.Message)));
                 }
             }
+        }
+        private static DateTime? GetImageDateTaken(string path)
+        {
+            try
+            {
+
+                DateTime creationDate = System.IO.File.GetCreationTime(path);
+
+                var directories = Meta.ImageMetadataReader.ReadMetadata(path);
+
+                // 1. Try DateTimeOriginal (EXIF tag 0x9003)
+                var subIfd = directories.OfType<MetaExif.ExifSubIfdDirectory>().FirstOrDefault();
+                if (subIfd != null && subIfd.TryGetDateTime(MetaExif.ExifDirectoryBase.TagDateTimeOriginal, out DateTime dateOriginal))
+                    return dateOriginal;
+
+                // 2. Try DateTimeDigitized (EXIF tag 0x9004)
+                if (subIfd != null && subIfd.TryGetDateTime(MetaExif.ExifDirectoryBase.TagDateTimeDigitized, out DateTime dateDigitized))
+                    return dateDigitized;
+
+                // 3. Try DateTime (EXIF tag 0x0132 in IFD0)
+                var ifd0 = directories.OfType<MetaExif.ExifIfd0Directory>().FirstOrDefault();
+                if (ifd0 != null && ifd0.TryGetDateTime(MetaExif.ExifDirectoryBase.TagDateTime, out DateTime dateTime))
+                    return dateTime;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Metadata error on file '{path}': {ex.Message}");
+            }
+
+            return null; // fallback ke File.GetCreationTime di pemanggil
         }
 
         void worker_ProgressChanged(object sender, ProgressChangedEventArgs e)
@@ -314,10 +358,15 @@ namespace File_Management
                         optException = txt_format_exception.Text.Split('|');
                     }
 
-                    resFiles = Directory.GetFiles(txt_source_path.Text, "*.*", SearchOption.AllDirectories)
-                      .Where(file => extAll
-                      .Contains(Path.GetExtension(file)))
-                      .ToList().ToArray<String>();
+                    //resFiles = Dir.GetFiles(txt_source_path.Text, "*.*", SearchOption.AllDirectories)
+                    //  .Where(file => extAll
+                    //  .Contains(Path.GetExtension(file)))
+                    //  .ToList().ToArray<String>();
+
+                    // Gunakan helper FileScanner
+                    IFileScanner scanner = new FileScanner();
+                    resFiles = scanner.GetAllFiles(txt_source_path.Text, extAll).ToArray();
+
 
                     if (optPrefix.Length > 0)
                     {
@@ -325,7 +374,7 @@ namespace File_Management
                         {
                             foreach (String p in optPrefix)
                             {
-                                if (!string.IsNullOrWhiteSpace(p) && Path.GetFileName(f).ToLower().Contains(p.ToLower()))
+                                if (!string.IsNullOrWhiteSpace(p) && Path.GetFileName(f).ToLower().StartsWith(p.ToLower()))
                                 {
                                     tempResFiles.Add(f);
                                 }
@@ -345,7 +394,7 @@ namespace File_Management
                         {
                             foreach (String p in optException)
                             {
-                                if (!string.IsNullOrWhiteSpace(p) && Path.GetFileName(f).ToLower().Contains(p.ToLower()))
+                                if (!string.IsNullOrWhiteSpace(p) && Path.GetFileName(f).ToLower().StartsWith(p.ToLower()))
                                 {
                                     tempResFiles.Remove(f);
                                 }
@@ -369,6 +418,7 @@ namespace File_Management
 
         private void AddListToDGV()
         {
+
             btnSourceScan.Enabled = false;
 
             dgvListFiles.UseWaitCursor = true;
@@ -379,13 +429,30 @@ namespace File_Management
                 dgvListFiles.Rows.Clear();
                 foreach (String f in resFiles)
                 {
+                    string ext = Path.GetExtension(f).ToLower();
                     string status = "Pending";
                     if (arrStatus.Length > 0)
                     {
                         status = arrStatus[i];
                     }
 
-                    dgvListFiles.Rows.Add(f, i + 1, status, Path.GetFileName(f), File.GetCreationTime(f).ToString(), File.GetLastWriteTime(f).ToString(), "View");
+                    long? sizeBytes = _fileProperty.GetFileSizeBytes(f);
+                    string sizeView = _fileProperty.FormatSize(sizeBytes ?? 0);
+
+                    dgvListFiles.Rows.Add(
+                        i + 1,
+                        _fileProperty.GetProperty(f, "File location"), // Date taken
+                        Path.GetFileName(f),
+                        sizeView,          // Tampilkan ke user
+                        sizeBytes,         // Untuk sorting, bisa disembunyikan kolomnya
+                        _fileProperty.GetProperty(f, "Date taken"), // Date taken
+                        _fileProperty.GetProperty(f, "Media created"), // Media created
+                        _fileProperty.GetProperty(f, "Date created"), // Media created
+                        _fileProperty.GetProperty(f, "Date modified"), // Media created
+                        //File.GetCreationTime(f).ToString(),
+                        //File.GetLastWriteTime(f).ToString(),
+                        status,
+                        "View");
                     i++;
                 }
             }
@@ -393,14 +460,14 @@ namespace File_Management
             {
                 listLog.Items.Add("Unknown Error when list files : " + ex);
             }
-            
+
             btnSourceScan.Enabled = true;
 
             dgvListFiles.UseWaitCursor = false;
             dgvListFiles.Enabled = true;
         }
 
-        private void btnSourceAdd_Click(object sender, EventArgs e)
+         private void btnSourceAdd_Click(object sender, EventArgs e)
         {
             if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
             {
@@ -507,6 +574,10 @@ namespace File_Management
                         dgvListFiles.Refresh();
 
                         final_dest_path = txt_dest_path.Text;
+                        // Fix for CS1001: Identifier expected
+                        // The issue is caused by the incomplete method call `File.(f)`.
+                        // It should be replaced with a valid method, such as `File.GetCreationTime(f)`.
+
                         myDate = rd_process_by_date_modified.Checked ? File.GetLastWriteTime(f) : File.GetCreationTime(f);
 
                         year = myDate.ToString("yyyy");
@@ -524,9 +595,9 @@ namespace File_Management
                         if (rd_then_path_year_month_day_2.Checked)
                             final_dest_path = Path.Combine(final_dest_path, year, $"{year}-{month}", $"{year}-{month}-{day}");
 
-                        if (!Directory.Exists(final_dest_path))
+                        if (!Dir.Exists(final_dest_path))
                         {
-                            Directory.CreateDirectory(final_dest_path);
+                            Dir.CreateDirectory(final_dest_path);
                             listLog.Items.Add("Create directory: " + final_dest_path);
                         }
 
@@ -782,6 +853,7 @@ namespace File_Management
 
         private void dgvListFiles_CellMouseEnter(object sender, DataGridViewCellEventArgs e)
         {
+            return;
             try
             {
                 if (e.RowIndex != this.dgvListFiles.NewRowIndex)
@@ -790,7 +862,7 @@ namespace File_Management
                     DataGridViewRow row = dgvListFiles.Rows[e.RowIndex];
                     row.DefaultCellStyle.BackColor = System.Drawing.Color.LightCoral;
                 }
-                if (e.ColumnIndex == 5 && e.RowIndex != this.dgvListFiles.NewRowIndex)
+                if (e.ColumnIndex == 8 && e.RowIndex != this.dgvListFiles.NewRowIndex)
                 {
                     // Get the clicked row
                     DataGridViewRow row = dgvListFiles.Rows[e.RowIndex];
@@ -817,10 +889,11 @@ namespace File_Management
 
         private void dgvListFiles_CellMouseLeave(object sender, DataGridViewCellEventArgs e)
         {
+            return;
             try
             {
                 DataGridViewRow row = dgvListFiles.Rows[e.RowIndex];
-                if (e.ColumnIndex == 5 && e.RowIndex != this.dgvListFiles.NewRowIndex)
+                if (e.ColumnIndex == 8 && e.RowIndex != this.dgvListFiles.NewRowIndex)
                 {
                     fd.Hide();
                 }
@@ -867,6 +940,50 @@ namespace File_Management
                     btnPause.Enabled = false;
                     btnResume.Enabled = false;
                 }
+            }
+        }
+
+        private void dgvListFiles_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+
+        }
+
+        private void dgvListFiles_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            try
+            {
+                fd.Hide();
+
+                if (e.RowIndex != this.dgvListFiles.NewRowIndex)
+                {
+                    //DataGridView row
+                    //DataGridViewRow row = dgvListFiles.Rows[e.RowIndex];
+                    //row.DefaultCellStyle.BackColor = System.Drawing.Color.LightCoral;
+                }
+                if (e.ColumnIndex == 10 && e.RowIndex != this.dgvListFiles.NewRowIndex)
+                {
+                    //MessageBox.Show("dgvListFiles_CellContentClick e.RowIndex " + e.RowIndex + " e.ColumnIndex " + e.ColumnIndex, "DEBUG", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    // Get the clicked row
+                    DataGridViewRow row = dgvListFiles.Rows[e.RowIndex];
+
+
+                    // Get the data for the clicked row
+                    fd.id = row.Cells[1].Value.ToString(); ;
+                    fd.name = row.Cells[2].Value.ToString();
+                    fd.path = row.Cells[1].Value.ToString();
+
+                    fd.Text = row.Cells[2].Value.ToString();
+
+                    fd.pbImages.Image = Image.FromFile(row.Cells[1].Value.ToString() + "/" + row.Cells[2].Value.ToString());
+                    fd.pbImages.SizeMode = PictureBoxSizeMode.Zoom;
+
+                    fd.Show();
+                    
+                }
+            }
+            catch (System.Exception ex)
+            {
+                listLog.Items.Add("MouseEnter Unknown error : " + ex);
             }
         }
     }
