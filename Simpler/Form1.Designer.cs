@@ -29,18 +29,9 @@
         private void InitializeComponent()
         {
             panel1 = new Panel();
+            splitter1 = new Splitter();
             groupBox1 = new GroupBox();
             dgvScan = new DataGridView();
-            no = new DataGridViewTextBoxColumn();
-            path = new DataGridViewTextBoxColumn();
-            nama = new DataGridViewTextBoxColumn();
-            type = new DataGridViewTextBoxColumn();
-            size = new DataGridViewTextBoxColumn();
-            dateTaken = new DataGridViewTextBoxColumn();
-            mediaCreated = new DataGridViewTextBoxColumn();
-            statusOri = new DataGridViewTextBoxColumn();
-            dateCreated = new DataGridViewTextBoxColumn();
-            proses = new DataGridViewTextBoxColumn();
             panel2 = new Panel();
             tabControl1 = new TabControl();
             tabPage1 = new TabPage();
@@ -93,9 +84,22 @@
             statusStrip1 = new StatusStrip();
             toolStripProgressBarGlobal = new ToolStripProgressBar();
             toolStripLabelProgress = new ToolStripStatusLabel();
+            toolStripStatusLabel1 = new ToolStripStatusLabel();
+            toolStripProgressBarPerFile = new ToolStripProgressBar();
             folderBrowserDialog1 = new FolderBrowserDialog();
             bgWorkerScan = new System.ComponentModel.BackgroundWorker();
             bgWorkerCopy = new System.ComponentModel.BackgroundWorker();
+            no = new DataGridViewTextBoxColumn();
+            path = new DataGridViewTextBoxColumn();
+            name = new DataGridViewTextBoxColumn();
+            type = new DataGridViewTextBoxColumn();
+            size = new DataGridViewTextBoxColumn();
+            originalStatus = new DataGridViewTextBoxColumn();
+            dateTaken = new DataGridViewTextBoxColumn();
+            mediaCreated = new DataGridViewTextBoxColumn();
+            dateCreated = new DataGridViewTextBoxColumn();
+            fileStatus = new DataGridViewTextBoxColumn();
+            copyStatus = new DataGridViewTextBoxColumn();
             panel1.SuspendLayout();
             groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dgvScan).BeginInit();
@@ -118,6 +122,7 @@
             // 
             // panel1
             // 
+            panel1.Controls.Add(splitter1);
             panel1.Controls.Add(groupBox1);
             panel1.Controls.Add(panel2);
             panel1.Controls.Add(statusStrip1);
@@ -126,6 +131,14 @@
             panel1.Name = "panel1";
             panel1.Size = new Size(1062, 555);
             panel1.TabIndex = 0;
+            // 
+            // splitter1
+            // 
+            splitter1.Location = new Point(0, 0);
+            splitter1.Name = "splitter1";
+            splitter1.Size = new Size(3, 533);
+            splitter1.TabIndex = 7;
+            splitter1.TabStop = false;
             // 
             // groupBox1
             // 
@@ -144,73 +157,14 @@
             dgvScan.AllowUserToDeleteRows = false;
             dgvScan.AllowUserToOrderColumns = true;
             dgvScan.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dgvScan.Columns.AddRange(new DataGridViewColumn[] { no, path, nama, type, size, dateTaken, mediaCreated, statusOri, dateCreated, proses });
+            dgvScan.Columns.AddRange(new DataGridViewColumn[] { no, path, name, type, size, originalStatus, dateTaken, mediaCreated, dateCreated, fileStatus, copyStatus });
             dgvScan.Dock = DockStyle.Fill;
             dgvScan.Location = new Point(3, 19);
             dgvScan.Name = "dgvScan";
+            dgvScan.ReadOnly = true;
             dgvScan.Size = new Size(1024, 200);
             dgvScan.TabIndex = 3;
             dgvScan.CellClick += dgvScan_CellClick;
-            // 
-            // no
-            // 
-            no.HeaderText = "No";
-            no.Name = "no";
-            no.Width = 50;
-            // 
-            // path
-            // 
-            path.HeaderText = "Path";
-            path.Name = "path";
-            path.Width = 150;
-            // 
-            // nama
-            // 
-            nama.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-            nama.HeaderText = "Nama";
-            nama.Name = "nama";
-            // 
-            // type
-            // 
-            type.HeaderText = "Type";
-            type.Name = "type";
-            type.Width = 70;
-            // 
-            // size
-            // 
-            size.HeaderText = "Size (B)";
-            size.Name = "size";
-            size.Width = 70;
-            // 
-            // dateTaken
-            // 
-            dateTaken.HeaderText = "Date Taken";
-            dateTaken.Name = "dateTaken";
-            dateTaken.Width = 120;
-            // 
-            // mediaCreated
-            // 
-            mediaCreated.HeaderText = "Media Created";
-            mediaCreated.Name = "mediaCreated";
-            mediaCreated.Width = 120;
-            // 
-            // statusOri
-            // 
-            statusOri.HeaderText = "Keaslian";
-            statusOri.Name = "statusOri";
-            statusOri.Width = 70;
-            // 
-            // dateCreated
-            // 
-            dateCreated.HeaderText = "Date Created";
-            dateCreated.Name = "dateCreated";
-            dateCreated.Width = 120;
-            // 
-            // proses
-            // 
-            proses.HeaderText = "Proses";
-            proses.Name = "proses";
-            proses.Width = 70;
             // 
             // panel2
             // 
@@ -323,7 +277,7 @@
             txtScanPath.Name = "txtScanPath";
             txtScanPath.Size = new Size(279, 23);
             txtScanPath.TabIndex = 1;
-            txtScanPath.Text = "H:\\BACKU FIX 1\\SAMPLE";
+            txtScanPath.Text = "I:\\BACKUP FOTO";
             // 
             // btnScanStop
             // 
@@ -762,7 +716,7 @@
             // 
             // statusStrip1
             // 
-            statusStrip1.Items.AddRange(new ToolStripItem[] { toolStripProgressBarGlobal, toolStripLabelProgress });
+            statusStrip1.Items.AddRange(new ToolStripItem[] { toolStripProgressBarGlobal, toolStripLabelProgress, toolStripStatusLabel1, toolStripProgressBarPerFile });
             statusStrip1.Location = new Point(0, 533);
             statusStrip1.Name = "statusStrip1";
             statusStrip1.Size = new Size(1062, 22);
@@ -781,6 +735,17 @@
             toolStripLabelProgress.Name = "toolStripLabelProgress";
             toolStripLabelProgress.Size = new Size(125, 17);
             toolStripLabelProgress.Text = "toolStripLabelProgress";
+            // 
+            // toolStripStatusLabel1
+            // 
+            toolStripStatusLabel1.Name = "toolStripStatusLabel1";
+            toolStripStatusLabel1.Size = new Size(10, 17);
+            toolStripStatusLabel1.Text = "|";
+            // 
+            // toolStripProgressBarPerFile
+            // 
+            toolStripProgressBarPerFile.Name = "toolStripProgressBarPerFile";
+            toolStripProgressBarPerFile.Size = new Size(100, 16);
             // 
             // folderBrowserDialog1
             // 
@@ -801,6 +766,81 @@
             bgWorkerCopy.DoWork += bgWorkerCopy_DoWork;
             bgWorkerCopy.ProgressChanged += bgWorkerCopy_ProgressChanged;
             bgWorkerCopy.RunWorkerCompleted += bgWorkerCopy_RunWorkerCompleted;
+            // 
+            // no
+            // 
+            no.HeaderText = "No";
+            no.Name = "no";
+            no.ReadOnly = true;
+            no.Width = 50;
+            // 
+            // path
+            // 
+            path.HeaderText = "Path";
+            path.Name = "path";
+            path.ReadOnly = true;
+            path.Width = 150;
+            // 
+            // name
+            // 
+            name.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            name.HeaderText = "Nama";
+            name.Name = "name";
+            name.ReadOnly = true;
+            // 
+            // type
+            // 
+            type.HeaderText = "Type";
+            type.Name = "type";
+            type.ReadOnly = true;
+            type.Width = 70;
+            // 
+            // size
+            // 
+            size.HeaderText = "Size (B)";
+            size.Name = "size";
+            size.ReadOnly = true;
+            size.Width = 70;
+            // 
+            // originalStatus
+            // 
+            originalStatus.HeaderText = "Original?";
+            originalStatus.Name = "originalStatus";
+            originalStatus.ReadOnly = true;
+            originalStatus.Width = 70;
+            // 
+            // dateTaken
+            // 
+            dateTaken.HeaderText = "Date Taken";
+            dateTaken.Name = "dateTaken";
+            dateTaken.ReadOnly = true;
+            dateTaken.Width = 120;
+            // 
+            // mediaCreated
+            // 
+            mediaCreated.HeaderText = "Media Created";
+            mediaCreated.Name = "mediaCreated";
+            mediaCreated.ReadOnly = true;
+            mediaCreated.Width = 120;
+            // 
+            // dateCreated
+            // 
+            dateCreated.HeaderText = "Date Created";
+            dateCreated.Name = "dateCreated";
+            dateCreated.ReadOnly = true;
+            dateCreated.Width = 120;
+            // 
+            // fileStatus
+            // 
+            fileStatus.HeaderText = "Status File";
+            fileStatus.Name = "fileStatus";
+            fileStatus.ReadOnly = true;
+            // 
+            // copyStatus
+            // 
+            copyStatus.HeaderText = "Status Copy";
+            copyStatus.Name = "copyStatus";
+            copyStatus.ReadOnly = true;
             // 
             // Form1
             // 
@@ -871,16 +911,6 @@
         private PictureBox picBox;
         private GroupBox groupBox1;
         private TableLayoutPanel tableLayoutPanel1;
-        private DataGridViewTextBoxColumn no;
-        private DataGridViewTextBoxColumn path;
-        private DataGridViewTextBoxColumn nama;
-        private DataGridViewTextBoxColumn type;
-        private DataGridViewTextBoxColumn size;
-        private DataGridViewTextBoxColumn dateTaken;
-        private DataGridViewTextBoxColumn mediaCreated;
-        private DataGridViewTextBoxColumn statusOri;
-        private DataGridViewTextBoxColumn dateCreated;
-        private DataGridViewTextBoxColumn proses;
         private TabPage tabPage2;
         private TableLayoutPanel tableLayoutPanel2;
         private GroupBox groupBox2;
@@ -907,5 +937,19 @@
         private RadioButton rbtnImageAll;
         private RadioButton rbtnImageOri;
         private RadioButton rbtnImageNonOri;
+        private ToolStripProgressBar toolStripProgressBarPerFile;
+        private Splitter splitter1;
+        private ToolStripStatusLabel toolStripStatusLabel1;
+        private DataGridViewTextBoxColumn no;
+        private DataGridViewTextBoxColumn path;
+        private DataGridViewTextBoxColumn name;
+        private DataGridViewTextBoxColumn type;
+        private DataGridViewTextBoxColumn size;
+        private DataGridViewTextBoxColumn originalStatus;
+        private DataGridViewTextBoxColumn dateTaken;
+        private DataGridViewTextBoxColumn mediaCreated;
+        private DataGridViewTextBoxColumn dateCreated;
+        private DataGridViewTextBoxColumn fileStatus;
+        private DataGridViewTextBoxColumn copyStatus;
     }
 }

@@ -1,28 +1,41 @@
 ﻿using Simpler.Helper;
 using System.ComponentModel;
+using System.Diagnostics;
 
 
 namespace Simpler
 {
     public partial class Form1 : Form
     {
-        private String[] extImages;
-        private String[] extVideos;
-        private String[] extDocuments;
-        private String[] extAll = Array.Empty<string>();
-        private String[] prefixIncl;
-        private String[] prefixExcl;
-        private String[] resFiles;
-        List<String> tempResFiles = new List<String> { };
+        private string[] extImages = Array.Empty<string>();
+        private string[] extVideos = Array.Empty<string>();
+        private string[] extDocuments = Array.Empty<string>();
+        private string[] extAll = Array.Empty<string>();
+        private string[] prefixIncl = Array.Empty<string>();
+        private string[] prefixExcl = Array.Empty<string>();
+        private string[] resFiles = Array.Empty<string>();
+        List<string> tempResFiles = new List<string> { };
 
-        private int totalDataScan = 0; // Total data yang akan di-scan, bisa digunakan untuk progress bar
+        private enum ProcessState { None, Scanning, Copying, Completed, Error };
+        private ProcessState currentState = ProcessState.None;
+
+        private DataGridColumnIndexer indexer; // Untuk menyimpan indeks kolom berdasarkan nama kolom
+
+        private int totalScannedDatas = 0; // Total data yang akan di-scan, bisa digunakan untuk progress bar
+        private int totalDataToCopy = 0; // Total data yang akan di-copy, bisa digunakan untuk progress bar
 
         public Form1()
         {
             InitializeComponent();
+            currentState = ProcessState.None;
+            totalScannedDatas = 0;
+            totalDataToCopy = 0;
+
+            indexer = new DataGridColumnIndexer(dgvScan); // Inisialisasi indeks kolom berdasarkan DataGridView
         }
 
         #region SCAN FILES
+
         private void btnScanBrowse_Click(object sender, EventArgs e)
         {
             if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
@@ -35,8 +48,14 @@ namespace Simpler
         {
             if (!bgWorkerScan.IsBusy)
             {
+                totalScannedDatas= 0; // Reset total data scan sebelum memulai scan baru
+                toolStripProgressBarPerFile.Visible = false; // Sembunyikan progress bar per file
+
+                // Disable tombol scan dan aktifkan tombol stop
                 btnScan.Enabled = false;
                 btnScanStop.Enabled = true;
+
+                // Reset DataGridView
                 dgvScan.Rows.Clear();
 
                 // Reset progress bar
@@ -80,7 +99,7 @@ namespace Simpler
             var data = e.UserState as dynamic;
             doScanAddDGV(data);
 
-            toolStripLabelProgress.Text = $"Scanning: {data.Index + 1}/{totalDataScan} data {data.FileLocation}";
+            toolStripLabelProgress.Text = $"Scanning: {data.Index}/{totalScannedDatas} data {data.FileLocation}";
             //toolStripLabelProgress.GetCurrentParent()?.Refresh();
         }
 
@@ -99,7 +118,7 @@ namespace Simpler
             else
             {
                 toolStripProgressBarGlobal.Value = 100;
-                toolStripLabelProgress.Text = $"Scanning: {totalDataScan}/{totalDataScan} data selesai.";
+                toolStripLabelProgress.Text = $"Scanning: {totalScannedDatas}/{totalScannedDatas} data selesai.";
             }
             Cursor.Current = Cursors.Default;
         }
@@ -158,7 +177,8 @@ namespace Simpler
 
             // Simpan hasil akhir
             resFiles = filteredFiles.ToArray();
-            totalDataScan = resFiles.Length; // Simpan total data yang akan di-scan
+            totalScannedDatas = resFiles.Length; // Simpan total data yang akan di-scan
+
             for (int i = 0; i < resFiles.Length; i++)
             {
                 if (worker.CancellationPending)
@@ -170,20 +190,26 @@ namespace Simpler
                 // Simpan sementara untuk menampilkan di DataGridView
                 string file = resFiles[i];
                 int progress = (int)((i + 1) * 100.0 / resFiles.Length);
+
                 // jalankan bgworker_onProgressChanged
-                //worker?.ReportProgress(progress, new { Index = i, File = file });
+                string statusOri = !string.IsNullOrEmpty(FileProperty.GetProperty(file, "Date taken")) || !string.IsNullOrEmpty(FileProperty.GetProperty(file, "Media created")) ? "Ori" : "Non-Ori";
+                string statusFile = File.Exists(Path.Combine(file)) ? "Display" : "Not Found";
+                if(new FileInfo(file).Length == 0) statusFile = "Empty";
+
                 worker?.ReportProgress(progress, new
                 {
-                    Index = i,
-                    File = file,
+                    Index = i+1,
                     FileLocation = FileProperty.GetProperty(file, "File location"),
-                    Name = FileProperty.GetProperty(file, "Name"),
+                    Name = FileProperty.GetProperty(file, "name"),
+                    Type = FileProperty.GetProperty(file, "Type"),
+                    SizeBytes = Format.GetFileSizeBytes(file),
+                    StatusOri = statusOri,
                     DateTaken = FileProperty.GetProperty(file, "Date taken"),
                     MediaCreated = FileProperty.GetProperty(file, "Media created"),
                     DateCreated = FileProperty.GetProperty(file, "Date created"),
-                    DateModified = FileProperty.GetProperty(file, "Date modified"),
-                    Type = FileProperty.GetProperty(file, "Type"),
-                    SizeBytes = Format.GetFileSizeBytes(file)
+                    //DateModified = FileProperty.GetProperty(file, "Date modified"),
+                    StatusFile = statusFile,
+                    statusCopy = ""
                 });
             }
         }
@@ -193,25 +219,20 @@ namespace Simpler
             try
             {
                 dgvScan.Rows.Add(
-                    data.Index + 1,
+                    data.Index,
                     data.FileLocation,
                     data.Name,
                     data.Type,
                     data.SizeBytes,
+                    data.StatusOri,
                     data.DateTaken,
                     data.MediaCreated,
-                    !String.IsNullOrEmpty(data.DateTaken) || !String.IsNullOrEmpty(data.MediaCreated) ? "Asli" : "",
                     data.DateCreated,
-                    "Display"
-                );
-                //dgvScan.Refresh();
+                    data.StatusFile,
+                    data.statusCopy
+            );
             }
-            catch (Exception ex)
-            {
-                // Log error jika diperlukan
-            }
-
-            // Jangan ubah cursor di sini, bukan tempatnya
+            catch (Exception ex) { }
         }
 
         private void dgvScan_CellClick(object sender, DataGridViewCellEventArgs e)
@@ -229,9 +250,12 @@ namespace Simpler
                 if (e.RowIndex != this.dgvScan.NewRowIndex)
                 {
                     DataGridViewRow row = dgvScan.Rows[e.RowIndex];
-                    string filePath = row.Cells[1].Value.ToString() + "/" + row.Cells[2].Value.ToString();
+                    string filePath = row.Cells[indexer["path"]].Value.ToString() + "/" + row.Cells[indexer["name"]].Value.ToString();
 
-                    if (File.Exists(filePath) && extImages.Contains(Path.GetExtension(filePath)))
+                    bool exist = File.Exists(filePath);
+                    string ext = Path.GetExtension(filePath).ToLower();
+                    bool contain = extImages.Contains(ext);
+                    if (exist && contain)
                     {
                         picBox.Image = Image.FromFile(filePath);
                         picBox.SizeMode = PictureBoxSizeMode.Zoom;
@@ -267,6 +291,7 @@ namespace Simpler
         {
             if (!bgWorkerCopy.IsBusy)
             {
+                toolStripProgressBarPerFile.Visible = true;
                 // jalankan bgWorkerCopy_DoWork
                 if (string.IsNullOrEmpty(txtCopyPath.Text))
                 {
@@ -285,23 +310,36 @@ namespace Simpler
                 }
                 else
                 {
+                    totalDataToCopy = 0; // Reset total data copy sebelum memulai copy baru
+
+                    // Disable tombol copy dan aktifkan tombol stop
                     btnCopy.Enabled = false;
                     btnCopyStop.Enabled = true;
 
                     // Reset progress bar
                     toolStripProgressBarGlobal.Value = 0;
                     toolStripProgressBarGlobal.Maximum = 100;
+                    toolStripProgressBarPerFile.Value = 0;
+                    toolStripProgressBarPerFile.Maximum = 100;
                     toolStripLabelProgress.Text = "Memulai copy...";
 
                     extAll = Array.Empty<string>();
+
+                    ResetCopiedStatus(); // Reset status "Copied" sebelum mulai copy ulang
 
                     Cursor.Current = Cursors.WaitCursor;
                     Application.DoEvents(); // Ini penting agar tombol tetap bisa diklik
 
                     // Kirim dua nilai sebagai tuple
+                    string mainPath = txtCopyPath.Text;
+                    string subPath = cbxCopySubFolder.Text;
                     var args = Tuple.Create(txtCopyPath.Text, cbxCopySubFolder.Text);
                     bgWorkerCopy.RunWorkerAsync(args); // hanya bisa mengirim satu argumen, jadi kita gunakan Tuple
                 }
+            }
+            else
+            {
+                MessageBox.Show("Proses copy masih berjalan. Harap tunggu hingga selesai atau klik Stop.");
             }
         }
 
@@ -314,6 +352,7 @@ namespace Simpler
                 btnCopy.Enabled = true;
                 btnCopyStop.Enabled = false;
             }
+            toolStripProgressBarPerFile.Visible = false;
         }
 
         private void bgWorkerCopy_DoWork(object sender, DoWorkEventArgs e)
@@ -335,24 +374,44 @@ namespace Simpler
         {
             btnCopy.Enabled = true;
             btnCopyStop.Enabled = false;
+
             if (e.Cancelled)
             {
                 toolStripLabelProgress.Text = "Copy dibatalkan.";
             }
             else if (e.Error != null)
             {
-                toolStripLabelProgress.Text = "Terjadi error saat scan.";
+                toolStripLabelProgress.Text = "Terjadi error saat copy.";
             }
             else
             {
                 toolStripProgressBarGlobal.Value = 100;
-                toolStripLabelProgress.Text = $"Copy: {totalDataScan}/{totalDataScan} data selesai.";
+                toolStripProgressBarPerFile.Value = 100;
+
+                toolStripLabelProgress.GetCurrentParent()?.Refresh();
+
+                toolStripLabelProgress.Text = $"Copy: {totalDataToCopy}/{totalDataToCopy} data selesai.";
             }
+            toolStripProgressBarPerFile.Visible = false;
             Cursor.Current = Cursors.Default;
+
+            int copied = dgvScan.Rows.Cast<DataGridViewRow>().Count(r => r.Cells[indexer["copyStatus"]].Value?.ToString() == "Success");
+            int failed = dgvScan.Rows.Cast<DataGridViewRow>().Count(r => r.Cells[indexer["copyStatus"]].Value?.ToString() == "Failed" 
+            || r.Cells[indexer["copyStatus"]].Value?.ToString() == "Error");
+            int total = dgvScan.Rows.Cast<DataGridViewRow>().Count(r => r.Cells[indexer["copyStatus"]].Value?.ToString() != null);
+            MessageBox.Show($"Copy selesai:\nTotal: {totalDataToCopy}\nSukses: {(copied>totalDataToCopy?0:copied)}\nGagal: {failed}", "Hasil Copy");
+            //MessageBox.Show($"Copy selesai:\nSukses: {copied}\nGagal: {failed}", "Hasil Copy");
         }
 
         private void DoCopyFiles(string mainPath, string subPath, BackgroundWorker worker, DoWorkEventArgs e)
         {
+
+            if (worker.CancellationPending)
+            {
+                e.Cancel = true; // <- ini perlu ditambahkan
+                return;
+            }
+
             string[] arrSubPath = subPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
 
             List<DataGridViewRow> rows = new List<DataGridViewRow>();
@@ -360,18 +419,28 @@ namespace Simpler
             {
                 foreach (DataGridViewRow row in dgvScan.Rows)
                 {
+                    if (!ShouldCopyRow(row))
+                        continue;
+
                     if (!row.IsNewRow)
                         rows.Add(row);
                 }
             }));
 
-            int total = rows.Count;
+            totalDataToCopy = rows.Count;
+            if (totalDataToCopy == 0)
+            {
+                dgvScan.Invoke((MethodInvoker)(() =>
+                {
+                    toolStripLabelProgress.Text = "Tidak ada file yang akan di-copy.";
+                }));
+                return;
+            }
             int current = 0;
-
             int processed = 0;
             foreach (DataGridViewRow row in rows)
             {
-                if (!ShouldCopyRow(row)) continue;
+                //if (!ShouldCopyRow(row)) continue;
 
                 DateTime myDate = GetTargetDate(row);
                 string finalPath = BuildFinalPath(mainPath, myDate, arrSubPath);
@@ -379,65 +448,77 @@ namespace Simpler
                 if (!Directory.Exists(finalPath))
                     Directory.CreateDirectory(finalPath);
 
-                string sourceFile = Path.Combine(row.Cells[1].Value.ToString(), row.Cells[2].Value.ToString());
+                string sourceFile = Path.Combine(row.Cells[indexer["path"]].Value.ToString(), row.Cells[indexer["name"]].Value.ToString());
                 string destFile = Path.Combine(finalPath, Path.GetFileName(sourceFile));
-
-                try
+                
+                long sourceSize = new FileInfo(sourceFile).Length;
+                if (File.Exists(destFile))
                 {
-                    bool success = CopyAndVerify(sourceFile, destFile);
+                    long finalSize = new FileInfo(destFile).Length;
+                    if (sourceSize == finalSize)
+                    {
+                        row.Cells[indexer["copyStatus"]].Value = "Exist";
+                        continue;
+                    }
+                }
+                    try
+                    {
+                        bool success = CopyAndVerifyWithProgress(sourceFile, destFile, worker);
 
-                    dgvScan.Invoke((MethodInvoker)(() =>
+                        dgvScan.Invoke((MethodInvoker)(() =>
+                        {
+                            row.Cells[indexer["copyStatus"]].Value = success ? "Success" : "Failed";
+                        }));
+                    }
+                    catch (Exception)
                     {
-                        row.Cells[9].Value = success ? "Copied" : "Copy Failed";
-                    }));
-                }
-                catch (Exception)
-                {
-                    dgvScan.Invoke((MethodInvoker)(() =>
-                    {
-                        row.Cells[9].Value = "Error";
-                    }));
-                }
+                        dgvScan.Invoke((MethodInvoker)(() =>
+                        {
+                            row.Cells[indexer["copyStatus"]].Value = "Error";
+                        }));
+                    }
                 processed++;
 
                 current++;
-                int progress = (int)((current / (double)total) * 100);
-                bgWorkerCopy?.ReportProgress(progress, new { Index = processed, Total = total, DestFile = destFile });
+                int progress = (int)((current / (double)totalDataToCopy) * 100);
+                bgWorkerCopy?.ReportProgress(progress, new { Index = processed, Total = totalDataToCopy, DestFile = destFile });
             }
         }
 
         private bool ShouldCopyRow(DataGridViewRow row)
         {
-            string ext = Path.GetExtension(row.Cells[2].Value?.ToString() ?? "").ToLower();
-            string type = row.Cells[3].Value?.ToString().ToLower(); // Type
-            string status = row.Cells[9].Value?.ToString();
+            string ext = Path.GetExtension(row.Cells[indexer["name"]].Value?.ToString() ?? "").ToLower();
+            string type = row.Cells[indexer["type"]].Value?.ToString().ToLower(); // Type
+            string status = row.Cells[indexer["fileStatus"]].Value?.ToString();
+            string statusCopy = row.Cells[indexer["copyStatus"]].Value?.ToString();
 
-            if (status != "Display") return false;
+            if (status != "Display" && statusCopy == "Failed") return false;
 
-            bool isImage = extImages != null && extImages.Contains(ext);
+           bool isImage = extImages != null && extImages.Contains(ext);
             bool isVideo = extVideos != null && extVideos.Contains(ext);
             bool isDocument = extDocuments != null && extDocuments.Contains(ext);
 
-            bool dateTaken = !string.IsNullOrEmpty(row.Cells[5].Value?.ToString());
-            bool mediaCreated = !string.IsNullOrEmpty(row.Cells[6].Value?.ToString());
+            bool dateTaken = !string.IsNullOrEmpty(row.Cells[indexer["dateTaken"]].Value?.ToString());
+            bool mediaCreated = !string.IsNullOrEmpty(row.Cells[indexer["mediaCreated"]].Value?.ToString());
 
-            bool isAsli = row.Cells[7].Value?.ToString()?.ToLower() == "Asli";
+            bool isAsli = row.Cells[indexer["originalStatus"]].Value?.ToString() == "Ori";
+            bool isCopied = statusCopy == "Success";
 
-            if (isImage && cbxCopyImages.Checked)
+            if (cbxCopyImages.Checked && isImage && !isCopied)
             {
                 if (rbtnImageAll.Checked) return true;
                 if (rbtnImageOri.Checked) return dateTaken && isAsli;
                 if (rbtnImageNonOri.Checked) return !dateTaken && !isAsli;
             }
 
-            if (isVideo && cbxCopyVideos.Checked)
+            if (cbxCopyVideos.Checked && isVideo && !isCopied)
             {
                 if (rbtnVideoAll.Checked) return true;
-                if (rbtnVideoAll.Checked) return mediaCreated && isAsli;
-                if (rbtnVideoAll.Checked) return !mediaCreated && !isAsli;
+                if (rbtnVideoOri.Checked) return mediaCreated && isAsli;
+                if (rbtnVideoNonOri.Checked) return !mediaCreated && !isAsli;
             }
 
-            if (isDocument && cbxCopyDocuments.Checked)
+            if (cbxCopyDocuments.Checked && isDocument && !isCopied)
             {
                 return true;
             }
@@ -447,12 +528,12 @@ namespace Simpler
 
         private DateTime GetTargetDate(DataGridViewRow row)
         {
-            string dateTaken = row.Cells[5].Value?.ToString();
-            string mediaCreated = row.Cells[6].Value?.ToString();
+            string dateTaken = row.Cells[indexer["dateTaken"]].Value?.ToString();
+            string mediaCreated = row.Cells[indexer["mediaCreated"]].Value?.ToString();
 
-            if (!string.IsNullOrEmpty(dateTaken) && DateTime.TryParse(dateTaken, out DateTime dtTaken))
+            if (!string.IsNullOrEmpty(dateTaken) && DateTime.TryParse(dateTaken, out DateTime dtTaken)) // Coba parse Date Taken > Foto
                 return dtTaken;
-            if (!string.IsNullOrEmpty(mediaCreated) && DateTime.TryParse(mediaCreated, out DateTime dtCreated))
+            if (!string.IsNullOrEmpty(mediaCreated) && DateTime.TryParse(mediaCreated, out DateTime dtCreated)) // Coba parse Media Created > Video
                 return dtCreated;
 
             return DateTime.Now;
@@ -477,6 +558,49 @@ namespace Simpler
             return srcSize == dstSize;
         }
 
+        private bool CopyAndVerifyWithProgress(string sourceFile, string destFile, BackgroundWorker worker)
+        {
+            const int bufferSize = 1024 * 1024; // 1MB
+            byte[] buffer = new byte[bufferSize];
+
+            long totalBytes = new FileInfo(sourceFile).Length;
+            long totalCopied = 0;
+
+            toolStripProgressBarPerFile.GetCurrentParent().Invoke((MethodInvoker)(() =>
+            {
+                toolStripProgressBarPerFile.Minimum = 0;
+                toolStripProgressBarPerFile.Maximum = 100;
+                toolStripProgressBarPerFile.Value = 0;
+            }));
+
+            using (var sourceStream = new FileStream(sourceFile, FileMode.Open, FileAccess.Read))
+            using (var destStream = new FileStream(destFile, FileMode.Create, FileAccess.Write))
+            {
+                int bytesRead;
+                while ((bytesRead = sourceStream.Read(buffer, 0, buffer.Length)) > 0)
+                {
+                    if (worker.CancellationPending)
+                    {
+                        return false;
+                    }
+
+                    //if (File.Exists(destFile)) continue;
+                    destStream.Write(buffer, 0, bytesRead);
+                    totalCopied += bytesRead;
+
+                    int percent = (int)(totalCopied * 100 / totalBytes);
+
+                    toolStripProgressBarPerFile.GetCurrentParent().Invoke((MethodInvoker)(() =>
+                    {
+                        toolStripProgressBarPerFile.Value = percent;
+                    }));
+                }
+            }
+
+            // Final verifikasi ukuran
+            long finalSize = new FileInfo(destFile).Length;
+            return totalBytes == finalSize;
+        }
 
         private void DoCopyUpdateDGV(dynamic data)
         {
@@ -494,14 +618,29 @@ namespace Simpler
                     data.DateCreated,
                     "Display"
                 );
-                //dgvScan.Refresh();
             }
             catch (Exception ex)
             {
-                // Log error jika diperlukan
+                Debug.WriteLine($"Error update DGV: {ex.Message}");
             }
+        }
 
-            // Jangan ubah cursor di sini, bukan tempatnya
+
+        private void ResetCopiedStatus() //copy ulang file yang sudah "Copied"
+        {
+            totalDataToCopy = 0;
+            dgvScan.Invoke((MethodInvoker)(() =>
+            {
+                foreach (DataGridViewRow row in dgvScan.Rows)
+                {
+                    if (row.Cells[indexer["copyStatus"]].Value?.ToString() == "Copied" 
+                    || row.Cells[indexer["copyStatus"]].Value?.ToString() == "Copy Failed" 
+                    || row.Cells[indexer["copyStatus"]].Value?.ToString() == "Error")
+                    {
+                        row.Cells[indexer["copyStatus"]].Value = "Display";
+                    }
+                }
+            }));
         }
         #endregion COPY FILES
 
