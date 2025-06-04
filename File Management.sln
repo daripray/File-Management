@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Simple", "Simple\Simple.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "File_Management_v1", "Simpler\File_Management_v1.csproj", "{9C8F4649-475C-462C-B0F6-C79E66116300}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "File_Management_v2", "File Management v2\File_Management_v2.csproj", "{3AA24E54-536D-0922-65C0-8CA48BA1CDF9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{9C8F4649-475C-462C-B0F6-C79E66116300}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9C8F4649-475C-462C-B0F6-C79E66116300}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9C8F4649-475C-462C-B0F6-C79E66116300}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3AA24E54-536D-0922-65C0-8CA48BA1CDF9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3AA24E54-536D-0922-65C0-8CA48BA1CDF9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3AA24E54-536D-0922-65C0-8CA48BA1CDF9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3AA24E54-536D-0922-65C0-8CA48BA1CDF9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
