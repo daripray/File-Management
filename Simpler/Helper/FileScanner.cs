@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
-namespace Simpler.Helper
+namespace File_Management_v1.Helper
 {
     internal static class FileScanner
     {
@@ -14,27 +14,35 @@ namespace Simpler.Helper
 
             try
             {
-                foreach (string file in Directory.GetFiles(rootPath))
-                {
-                    if (extensions.Contains(Path.GetExtension(file), StringComparer.OrdinalIgnoreCase))
-                        files.Add(file);
-                }
+                // Ambil file di direktori saat ini
+                files.AddRange(Directory
+                    .EnumerateFiles(rootPath)
+                    .Where(f => extensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase)));
 
-                foreach (string dir in Directory.GetDirectories(rootPath))
+                // Proses semua subdirektori
+                foreach (string dir in Directory.EnumerateDirectories(rootPath))
                 {
                     try
                     {
-                        files.AddRange(GetAllFiles(dir, extensions)); // rekursif aman
+                        files.AddRange(GetAllFiles(dir, extensions)); // rekursif
                     }
                     catch (UnauthorizedAccessException ex)
                     {
                         Debug.WriteLine($"[SKIP] Access denied to folder: {dir} => {ex.Message}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"[SKIP] Error accessing folder: {dir} => {ex.Message}");
                     }
                 }
             }
             catch (UnauthorizedAccessException ex)
             {
                 Debug.WriteLine($"[SKIP] Access denied to root folder: {rootPath} => {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SKIP] Error accessing root folder: {rootPath} => {ex.Message}");
             }
 
             return files;

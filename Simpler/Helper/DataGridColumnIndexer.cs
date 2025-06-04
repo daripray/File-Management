@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Windows.Forms;
 
-namespace Simpler.Helper
+namespace File_Management_v1.Helper
 {
     /// <summary>
     /// Kelas ini menyimpan dan mengakses indeks kolom DataGridView berdasarkan nama kolom.

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using System.IO;
 using Microsoft.WindowsAPICodePack.Shell;
 
-namespace Simpler.Helper
+namespace File_Management_v1.Helper
 { 
     internal static class FileProperty
     {
