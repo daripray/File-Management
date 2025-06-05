@@ -24,7 +24,7 @@ namespace File_Management_v2.Helper
         public DateTime? DateTaken { get; set; }
         public DateTime? MediaCreated { get; set; }
         public string FileStatus { get; set; }
-        public bool IsOri => DateTaken.HasValue || MediaCreated.HasValue;
+        public bool IsOri { get; set; }
         public int TotalFiles { get; set; }
         public int Index { get; set; }
 
@@ -71,6 +71,7 @@ namespace File_Management_v2.Helper
 
             return files;
         }
+
 
         /// <summary>
         /// Mengambil metadata DateTaken dan MediaCreated dari file.

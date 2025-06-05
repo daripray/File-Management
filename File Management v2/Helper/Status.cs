@@ -34,10 +34,11 @@ namespace File_Management_v2.Helper
             public const string Done = "Done";
         }
 
-        internal static class File
+        internal static class Original
         {
-            public const string NonOri = "Non Ori";
-            public const string Ori = "Ori";
+            public const string All = "All";
+            public const string Ori = "ORI";
+            public const string NonOri = "NON ORI";
         }
 
         internal static class Scan

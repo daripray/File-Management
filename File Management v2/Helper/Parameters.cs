@@ -10,6 +10,7 @@
         public List<string> IncludeKeywords { get; set; }
         public List<string> ExcludeKeywords { get; set; }
         public OriFilterOption OriFilter { get; set; }
+        public string FileTypeFilter { get; set; } // All, Ori, NonOri
     }
     public enum OriFilterOption
     {
