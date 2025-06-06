@@ -5,22 +5,28 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.IO;
+using System.Linq;
 using System.Reflection.Metadata;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
+using System.Drawing.Imaging;
+using static File_Management_v2.Helper.FileStatus;
+using static Microsoft.WindowsAPICodePack.Shell.PropertySystem.SystemProperties.System;
+using Image = System.Drawing.Image;
 
 
 namespace File_Management_v2
 {
     public partial class Main : Form
     {
-        private List<string> imageExts = new List<string> { };
-        private List<string> videoExts = new List<string> { };
-        private List<string> docExts = new List<string> { };
-        private List<string> allExt = new List<string> { };
-        private List<string> excludeKeys = new List<string> { };
-        private List<string> includeKeys = new List<string> { };
+        private List<string> globImageExts = new List<string> { };
+        private List<string> globVideoExts = new List<string> { };
+        private List<string> globDocExts = new List<string> { };
+        private List<string> globAllExt = new List<string> { };
+        private List<string> globExcludeKeys = new List<string> { };
+        private List<string> globIncludeKeys = new List<string> { };
 
         private string currentAction; // Variabel untuk menyimpan jenis proses yang sedang dilakukan (Scan, Copy, Move)
         private string currentState; // Variabel untuk menyimpan status proses saat ini
@@ -28,21 +34,28 @@ namespace File_Management_v2
         private Dictionary<string, int> _prefixDict = new Dictionary<string, int>(); // Untuk menyimpan prefix yang sudah ditemukan beserta jumlahnya
         private DataGridColumnIndexer indexer; // Untuk menyimpan indeks kolom berdasarkan nama kolom
         private int totalScannedDatas = 0; // Total data yang akan di-scan, bisa digunakan untuk progress bar
-        private DateTime scanStartTime; // Waktu mulai scan
-        private DateTime scanEndTime; // Waktu selesai scan
+        private DateTime processStartTime; // Waktu mulai scan
+        private DateTime processEndTime; // Waktu selesai scan
 
         private string _lastPreviewFilePath = "";
 
+        private bool isDeleteAfterMove = false; // Untuk menentukan apakah akan menghapus file setelah dipindahkan
+        private bool copyImages = false; // Untuk menentukan apakah akan menyalin gambar
+        private bool copyVideo = false;
+        private bool copyDocument = false; // Untuk menentukan apakah akan menyalin dokumen
+        private bool isProcessImages = false;
+        private Parameters.OriFilterOption imagesOriFilter = Parameters.OriFilterOption.All; // Untuk menentukan filter original pada gambar
+        private Parameters.OriFilterOption videoOriFilter = Parameters.OriFilterOption.All; // Untuk menentukan filter original pada video
+        private string baseTargetPath = "";
+        private string subfolderFormat = ""; // Format subfolder untuk penyalinan file
+
         private int totalDataToCopy = 0; // Total data yang akan di-copy, bisa digunakan untuk progress bar
-        private bool moveAndDelete = false; // Untuk menentukan apakah akan memindahkan file dan menghapus yang lama
 
         public Main()
         {
             InitializeComponent();
-            currentAction = Status.Action.None; // Inisialisasi currentAction
-            currentState = Status.Process.None; // Inisialisasi currentState
-            totalScannedDatas = 0;
-            totalDataToCopy = 0;
+            currentState = currentAction = FileStatus.Action.None; // Inisialisasi status awal
+            totalScannedDatas = totalDataToCopy = 0; // Inisialisasi total data yang akan di-scan/copy
             _prefixDict.Clear();
 
             indexer = new DataGridColumnIndexer(dgvScan); // Inisialisasi indeks kolom berdasarkan DataGridView
@@ -65,34 +78,40 @@ namespace File_Management_v2
         }
         private void btnScanBrowse_Click(object sender, EventArgs e)
         {
-            if (folderBrowserScan.ShowDialog() == DialogResult.OK)
+            using (var folderBrowserScan = new FolderBrowserDialog())
             {
-                txtScanPath.Text = folderBrowserScan.SelectedPath;
+                folderBrowserScan.Description = "Pilih Folder untuk Scan";
+                folderBrowserScan.SelectedPath = txtScanPath.Text; // opsional
+                if (folderBrowserScan.ShowDialog() == DialogResult.OK)
+                {
+                    txtScanPath.Text = folderBrowserScan.SelectedPath;
+                    btnScan.Enabled = true;
+                }
             }
         }
         private void chkImage_CheckedChanged(object sender, EventArgs e)
         {
             // Aktifkan atau nonaktifkan kontrol terkait gambar berdasarkan checkbox
             txtExtImage.Enabled = chkImage.Checked;
-            chkBoxCopyImages.Enabled = chkImage.Checked;
-            rbtnImageAll.Enabled = chkImage.Checked;
-            rbtnImageOri.Enabled = chkImage.Checked;
-            rbtnImageNonOri.Enabled = chkImage.Checked;
+            checkBoxCopyImages.Enabled = chkImage.Checked;
+            radioProcessImageAll.Enabled = chkImage.Checked;
+            radioProcessImageOri.Enabled = chkImage.Checked;
+            radioProcessImageNonOri.Enabled = chkImage.Checked;
         }
         private void chkVideo_CheckedChanged(object sender, EventArgs e)
         {
             // Aktifkan atau nonaktifkan kontrol terkait video berdasarkan checkbox
             txtExtVideo.Enabled = chkVideo.Checked;
-            chkBoxCopyVideos.Enabled = chkVideo.Checked;
-            rbtnVideoAll.Enabled = chkVideo.Checked;
-            rbtnVideoOri.Enabled = chkVideo.Checked;
-            rbtnVideoNonOri.Enabled = chkVideo.Checked;
+            checkBoxCopyVideos.Enabled = chkVideo.Checked;
+            radioProcessVideoAll.Enabled = chkVideo.Checked;
+            radioProcessVideoOri.Enabled = chkVideo.Checked;
+            radioProcessVideoNonOri.Enabled = chkVideo.Checked;
         }
         private void chkDocument_CheckedChanged(object sender, EventArgs e)
         {
             // Aktifkan atau nonaktifkan kontrol terkait dokumen berdasarkan checkbox
             txtExtDocument.Enabled = chkDocument.Checked;
-            chkBoxCopyDocuments.Enabled = chkDocument.Checked;
+            checkBoxCopyDocs.Enabled = chkDocument.Checked;
         }
         private void chkKeyIncl_CheckedChanged(object sender, EventArgs e)
         {
@@ -108,9 +127,9 @@ namespace File_Management_v2
         #region SCAN FILES
         private void btnScan_Click(object sender, EventArgs e)
         {
-            scanStartTime = DateTime.Now;
-            currentAction = Status.Action.Scan;
-            currentState = Status.Process.Initiating;
+            processStartTime = DateTime.Now;
+            currentAction = FileStatus.Action.Scan;
+            currentState = FileStatus.Process.Running;
             addLog(" ----------------------------------- ");
             addLog(); // akan log: "Proses SCAN dimulai."
 
@@ -123,32 +142,25 @@ namespace File_Management_v2
             }
 
             // 1. Kumpulkan ekstensi berdasarkan checkbox
-            imageExts = chkImage.Checked ? txtExtImage.Text.Split(',').Select(e => e.Trim().ToUpper()).ToList() : new List<string>();
-            videoExts = chkVideo.Checked ? txtExtVideo.Text.Split(',').Select(e => e.Trim().ToUpper()).ToList() : new List<string>();
-            docExts = chkDocument.Checked ? txtExtDocument.Text.Split(',').Select(e => e.Trim().ToUpper()).ToList() : new List<string>();
+            globImageExts = chkImage.Checked ? txtExtImage.Text.Split(',').Select(e => e.Trim().ToUpper()).ToList() : new List<string>();
+            globVideoExts = chkVideo.Checked ? txtExtVideo.Text.Split(',').Select(e => e.Trim().ToUpper()).ToList() : new List<string>();
+            globDocExts = chkDocument.Checked ? txtExtDocument.Text.Split(',').Select(e => e.Trim().ToUpper()).ToList() : new List<string>();
 
             // 2. Keyword Include dan Exclude
-            includeKeys = chkKeyIncl.Checked ? txtKeyIncl.Text.Split(',').Select(x => x.Trim().ToUpper()).ToList() : new List<string>();
-            excludeKeys = chkKeyExcl.Checked ? txtKeyExcl.Text.Split(',').Select(x => x.Trim().ToUpper()).ToList() : new List<string>();
+            globIncludeKeys = chkKeyIncl.Checked ? txtKeyIncl.Text.Split(',').Select(x => x.Trim().ToUpper()).ToList() : new List<string>();
+            globExcludeKeys = chkKeyExcl.Checked ? txtKeyExcl.Text.Split(',').Select(x => x.Trim().ToUpper()).ToList() : new List<string>();
 
             // 3. Metadata Filter (All / Ori / Non-Ori)
-            var oriFilter = OriFilterOption.All;
-            if (radioOri.Checked) oriFilter = OriFilterOption.OriOnly;
-            else if (radioNonOri.Checked) oriFilter = OriFilterOption.NonOriOnly;
+            var oriFilter = Parameters.OriFilterOption.All;
+            if (radioOri.Checked) oriFilter = Parameters.OriFilterOption.Ori;
+            else if (radioNonOri.Checked) oriFilter = Parameters.OriFilterOption.NonOri;
 
             // 4. Buat parameter scan
-            var param = new Parameters
-            {
-                SourcePath = txtScanPath.Text,
-                //ImageExts = imageExts,
-                //VideoExts = videoExts,
-                //DocExts = docExts,
-                //IncludeKeywords = incl,
-                //ExcludeKeywords = excl,
-                OriFilter = oriFilter
-            };
+            var param = new Parameters.Scan();
+            param.SourcePath = txtScanPath.Text;
+            param.OriFilter = oriFilter;
 
-            progressBarScan.Value = 0;
+            progressBarGlobal.Value = 0;
             dgvScan.Rows.Clear();
             btnScan.Enabled = false;
             btnCancelScan.Enabled = true;
@@ -159,10 +171,7 @@ namespace File_Management_v2
         {
             try
             {
-                currentState = Status.Process.Scanning;
-                addLog(); // akan log: "Memindai file..."
-
-                var param = (Parameters)e.Argument;
+                var param = (Parameters.Scan)e.Argument;
                 var files = Directory.GetFiles(param.SourcePath, "*.*", SearchOption.AllDirectories);
                 var result = new List<FileInfo>();
 
@@ -178,8 +187,9 @@ namespace File_Management_v2
                     if (bgWorkerScan.CancellationPending)
                     {
                         e.Cancel = true;
-                        currentState = Status.Process.Stopping;
+                        currentState = FileStatus.Process.Canceled;
                         addLog(); // akan log: "Proses dihentikan oleh pengguna."
+                        currentAction = FileStatus.Action.None; // Reset currentAction ke None setelah dibatalkan
                         return;
                     }
 
@@ -187,51 +197,37 @@ namespace File_Management_v2
                     var fileInfo = new FileInfo(filePath);
                     string ext = fileInfo.Extension.TrimStart('.').ToUpper();
 
-                    if (!(imageExts.Contains(ext) || videoExts.Contains(ext) || docExts.Contains(ext))) continue;
+                    if (!(globImageExts.Contains(ext) || globVideoExts.Contains(ext) || globDocExts.Contains(ext))) continue;
 
                     string nameLower = fileInfo.Name.ToUpper();
 
-                    if (includeKeys.Any() && !includeKeys.Any(k => nameLower.Contains(k))) continue;
-                    if (excludeKeys.Any(k => nameLower.Contains(k))) continue;
+                    if (globIncludeKeys.Any() && !globIncludeKeys.Any(k => nameLower.Contains(k))) continue;
+                    if (globExcludeKeys.Any(k => nameLower.Contains(k))) continue;
 
                     // Metadata Check
                     var props = FileProperty.GetFileMetadata(filePath);
                     bool isOri = props.DateTaken != null || props.MediaCreated != null;
 
-                    if (param.OriFilter == OriFilterOption.OriOnly && !isOri) continue;
-                    if (param.OriFilter == OriFilterOption.NonOriOnly && isOri) continue;
+                    if (param.OriFilter == Parameters.OriFilterOption.Ori && !isOri) continue;
+                    if (param.OriFilter == Parameters.OriFilterOption.NonOri && isOri) continue;
 
-                    string fileStatus = FileScanner.GetFileStatus(filePath, imageExts, videoExts, docExts);
+                    string fileStatus = FileScanner.GetFileStatus(filePath, globImageExts, globVideoExts, globDocExts);
 
-                    //var resultItem = new FileScanResult
-                    //{
-                    //    FileName = Path.GetFileName(filePath),
-                    //    FilePath = filePath,
-                    //    Directory = Path.GetDirectoryName(filePath) ?? "",
-                    //    SizeBytes = fileInfo.Length,
-                    //    DateCreated = fileInfo.CreationTime,
-                    //    DateModified = fileInfo.LastWriteTime,
-                    //    DateTaken = props.DateTaken,
-                    //    MediaCreated = props.MediaCreated,
-                    //    FileStatus = fileStatus,
-                    //    TotalFiles = total,
-                    //    Index = i + 1,
-                    //};
-
-                    var resultItem = new FileScanResult();
-
-                    resultItem.FileName = Path.GetFileName(filePath);
-                    resultItem.FilePath = filePath;
-                    resultItem.Directory = Path.GetDirectoryName(filePath) ?? "";
-                    resultItem.SizeBytes = fileInfo.Length;
-                    resultItem.DateCreated = fileInfo.CreationTime;
-                    resultItem.DateModified = fileInfo.LastWriteTime;
-                    resultItem.DateTaken = props.DateTaken;
-                    resultItem.MediaCreated = props.MediaCreated;
-                    resultItem.IsOri = isOri;
-                    resultItem.FileStatus = fileStatus;
-                    resultItem.TotalFiles = total;
-                    resultItem.Index = i + 1;
+                    var resultItem = new FileScanResult
+                    {
+                        FileName = Path.GetFileName(filePath),
+                        FilePath = filePath,
+                        Directory = Path.GetDirectoryName(filePath) ?? "",
+                        SizeBytes = fileInfo.Length,
+                        DateCreated = fileInfo.CreationTime,
+                        DateModified = fileInfo.LastWriteTime,
+                        DateTaken = props.DateTaken,
+                        MediaCreated = props.MediaCreated,
+                        IsOri = isOri,
+                        FileStatus = fileStatus,
+                        TotalFiles = total,
+                        Index = i + 1
+                    };
 
                     bgWorkerScan.ReportProgress((int)((i + 1.0) / total * 100), resultItem);
                 }
@@ -242,7 +238,7 @@ namespace File_Management_v2
             {
                 MessageBox.Show("Error in DoWork: " + ex.Message);
                 e.Cancel = true;
-                currentState = Status.Process.Error;
+                currentState = FileStatus.Process.Failed;
                 addLog($"[ERROR] {ex.Message}");
                 return;
             }
@@ -250,7 +246,7 @@ namespace File_Management_v2
         }
         private void bgWorkerScan_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
-            progressBarScan.Value = e.ProgressPercentage;
+            progressBarGlobal.Value = e.ProgressPercentage;
 
             if (e.UserState is not FileScanResult result || result == null)
                 return;
@@ -268,47 +264,46 @@ namespace File_Management_v2
                 result.FileStatus,                                           // fileStatus (nanti diisi proses selanjutnya)
                 ""                                                           // copyStatus (nanti diisi proses copy)
             );
-            toolStripLabelProgress.Text = $"Scanning: {result.Directory} | Progress: {result.Index} of {result.TotalFiles} files.";
+            labelProgress.Text = $"Scanning: {result.Directory} | Progress: {result.Index} of {result.TotalFiles} files.";
         }
         private void bgWorkerScan_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             btnScan.Enabled = true;
             btnCancelScan.Enabled = false;
-            progressBarScan.Value = 100;
+            progressBarGlobal.Value = 100;
             int scannedCount = dgvScan.Rows.Count;
-            scanEndTime = DateTime.Now; // Set waktu akhir scan
+            processEndTime = DateTime.Now; // Set waktu akhir scan
 
             if (e.UserState is not FileScanResult result || result == null)
                 //return;
 
+
                 if (e.Cancelled)
                 {
-                    MessageBox.Show("Scan dibatalkan oleh pengguna.", "Dibatalkan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    currentState = Status.Process.Stopping;
+                    MessageBox.Show($"Proses {currentAction} dibatalkan oleh pengguna.", "Dibatalkan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    currentState = FileStatus.Process.Canceled;
                     return;
                 }
+                else if (e.Error != null)
+                {
+                    MessageBox.Show($"Kesalahan saat {currentAction}: " + e.Error.Message);
+                    currentState = FileStatus.Process.Failed;
+                }
+                else
+                {
+                    TimeSpan duration = processEndTime - processStartTime;
 
-            if (e.Error != null)
-            {
-                MessageBox.Show("Kesalahan saat scan: " + e.Error.Message);
-                currentState = Status.Process.Error;
-            }
-            else
-            {
-                TimeSpan duration = scanEndTime - scanStartTime;
+                    labelProgress.Text = $"Scan completed: {scannedCount} files found";
+                    MessageBox.Show("Pemindaian selesai.\nTotal file ditampilkan: " + scannedCount, "Scan Selesai", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-                toolStripLabelProgress.Text = $"Scan completed: {scannedCount} files found";
-                MessageBox.Show("Pemindaian selesai.\nTotal file ditampilkan: " + scannedCount, "Scan Selesai", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-                addLog($"Finished scanning {totalScannedDatas} files.");
-                addLog($"Matched {dgvScan.Rows.Count} files displayed.");
-                addLog($"Scanning duration: {duration.TotalSeconds:F2} seconds.");
-                currentState = Status.Process.Done;
-            }
+                    addLog($"Finished scanning {totalScannedDatas} files.");
+                    addLog($"Matched {dgvScan.Rows.Count} files displayed.");
+                    addLog($"Scanning duration: {duration.TotalSeconds:F2} seconds.");
+                    currentState = FileStatus.Process.Completed;
+                }
             addLog(); // akan log sesuai status
             addLog(" ----------------------------------- ");
-            currentAction.Normalize(); // Reset currentAction ke None setelah selesai
-            currentState.Normalize(); // Reset currentState ke None setelah selesai
+            currentAction = FileStatus.Action.None; // Reset currentAction ke None setelah selesai
         }
         private void btnCancelScan_Click(object sender, EventArgs e)
         {
@@ -316,6 +311,11 @@ namespace File_Management_v2
             {
                 bgWorkerScan.CancelAsync();
                 btnCancelScan.Enabled = false;
+                currentState = FileStatus.Process.Stopping; // Set currentState ke Stopping
+
+                addLog(); // akan log: "Proses dihentikan oleh pengguna."
+                addLog(" ----------------------------------- ");
+                currentAction = FileStatus.Action.None; // Set currentAction ke Stop
             }
         }
         #endregion SCAN FILES
@@ -323,270 +323,308 @@ namespace File_Management_v2
 
         #region COPY FILES
 
-        private void btnCopy_Click(object sender, EventArgs e)
+        private void buttonProcess_Click(object sender, EventArgs e)
         {
-            // Set currentAction untuk proses Copy
-            currentAction = Status.Action.Copy;
-            // Set currentAction dan currentState untuk proses Copy
-            DoCopyOrMoveInitialing();
+            processStartTime = DateTime.Now;
+            // Set currentAction dan currentState untuk proses Copy / Move
+            currentAction = radioButtonProcessCopy.Checked ? FileStatus.Action.Copy : FileStatus.Action.Move;
+            currentState = FileStatus.Process.Running;
+            addLog(" ----------------------------------- ");
+            addLog(); // akan log: "Proses COPY dimulai."
+
+            // Validasi form sebelum melanjutkan
+            var param = new Parameters.Process();
+            param.BaseTargetPath = txtCopyPath.Text.Trim();
+            param.SubfolderFormat = comboBoxCopySubFolder.SelectedItem?.ToString() ?? "";
+            param.DeleteAfterMove = checkBoxMoveDeleteFile.Checked; // Ambil nilai dari checkbox
+            param.DeleteAfterMove = checkBoxMoveDeleteFile.Checked;
+            param.ProcessImages = checkBoxCopyImages.Checked;
+            param.ProcessVideos = checkBoxCopyVideos.Checked;
+            param.ProcessDocs = checkBoxCopyDocs.Checked;
+
+
+            var oriImageFilter = Parameters.OriFilterOption.All;
+            if (radioProcessImageOri.Checked) oriImageFilter = Parameters.OriFilterOption.Ori;
+            else if (radioProcessImageNonOri.Checked) oriImageFilter = Parameters.OriFilterOption.NonOri;
+            param.OriImagesFilter = oriImageFilter;
+
+            var oriVideoFilter = Parameters.OriFilterOption.All;
+            if (radioProcessVideoOri.Checked) oriVideoFilter = Parameters.OriFilterOption.Ori;
+            else if (radioProcessVideoNonOri.Checked) oriVideoFilter = Parameters.OriFilterOption.NonOri;
+            param.OriVideosFilter = oriVideoFilter;
+
+            bgWorkerCopy.RunWorkerAsync(param);
         }
-
-        private void btnMove_Click(object sender, EventArgs e)
-        {
-            // Set currentAction dan currentState untuk proses Move
-            currentAction = Status.Action.Move;
-            moveAndDelete = checkBoxMoveDeleteFile.Checked; // Ambil nilai dari checkbox
-                                                            // Set currentAction dan currentState untuk proses Move
-            DoCopyOrMoveInitialing();
-        }
-
-        private bool validateFormCopy()
-        {
-            if (string.IsNullOrEmpty(txtCopyPath.Text))
-            {
-                MessageBox.Show("Silakan pilih folder tujuan.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return false;
-            }
-            else if (!Directory.Exists(txtCopyPath.Text))
-            {
-                MessageBox.Show("Folder tujuan tidak ditemukan.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return false;
-            }
-            else if (string.IsNullOrEmpty(comboBoxCopySubFolder.Text))
-            {
-                MessageBox.Show("Silakan pilih struktur folder tujuan.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return false;
-            }
-
-            return true;
-        }
-
-        private void DoCopyOrMoveInitialing()
-        {
-            if (!bgWorkerCopy.IsBusy)
-            {
-                currentState = Status.Process.Initiating;
-
-                toolStripProgressBarPerFile.Visible = true;
-
-                // Validasi form sebelum melanjutkan
-                if (!validateFormCopy())
-                {
-                    currentState = Status.Process.Error; // Set state ke Error jika validasi gagal
-                    addLog();
-                    return;
-                }
-                else
-                {
-                    addLog();
-                    totalDataToCopy = 0; // Reset total data copy sebelum memulai copy baru
-
-                    // Disable tombol copy dan move, aktifkan tombol stop
-                    btnCopy.Enabled = false;
-                    btnMove.Enabled = false;
-                    btnCopyStop.Enabled = true;
-
-                    // Reset progress bar
-                    progressBarScan.Value = 0;
-                    progressBarScan.Maximum = 100;
-                    toolStripProgressBarPerFile.Value = 0;
-                    toolStripProgressBarPerFile.Maximum = 100;
-                    toolStripLabelProgress.Text = $"Memulai {currentAction.ToString()}...";
-
-                    allExt = new List<string> { };
-
-                    ResetCopiedStatus(); // Reset status "Copied" sebelum mulai copy ulang
-
-                    Cursor.Current = Cursors.WaitCursor;
-
-                    // Kirim dua nilai sebagai tuple
-                    var args = Tuple.Create(txtCopyPath.Text, comboBoxCopySubFolder.Text);
-                    bgWorkerCopy.RunWorkerAsync(args); // hanya bisa mengirim satu argumen, jadi kita gunakan Tuple
-                }
-            }
-            else
-            {
-                MessageBox.Show($"Proses {currentState.ToString()} masih berjalan. Harap tunggu hingga selesai atau klik Stop.");
-            }
-        }
-
-        private void btnCopyStop_Click(object sender, EventArgs e)
-        {
-            if (bgWorkerCopy.IsBusy && bgWorkerCopy.WorkerSupportsCancellation)
-            {
-                currentAction = Status.Action.Stop;
-                bgWorkerCopy.CancelAsync();
-                toolStripLabelProgress.Text = $"Membatalkan proses {currentState}...";
-
-                if (currentAction == Status.Action.Copy)
-                {
-                    btnCopy.Enabled = true;
-                    btnCopyStop.Enabled = false;
-                }
-                if (currentAction == Status.Action.Move)
-                {
-                    btnMove.Enabled = true;
-                    btnCopyStop.Enabled = false;
-                }
-            }
-            toolStripProgressBarPerFile.Visible = false;
-        }
-
         private void bgWorkerCopy_DoWork(object sender, DoWorkEventArgs e)
         {
-            Application.DoEvents(); // pastikan event berjalan
-            currentState = currentAction == Status.Action.Copy ? Status.Process.Copying : Status.Process.Moving; // Set state sesuai action
-            addLog();
+            var param = (Parameters.Process)e.Argument;
 
-            var args = e.Argument as Tuple<string, string>;
-            DoCopyFiles(args.Item1, args.Item2, sender as BackgroundWorker, e);
+            int successCount = 0;
+            int skipCount = 0;
+            int failCount = 0;
+
+            string baseTargetPath = param.BaseTargetPath;
+            string subfolderFormat = param.SubfolderFormat;
+            bool isMove = radioButtonProcessMove.Checked;
+            bool deleteAfterMove = param.DeleteAfterMove;
+
+            
+            var indexer = new DataGridColumnIndexer(dgvScan);
+            int total = dgvScan.Rows.Count;
+
+            for (int i = 0; i < total; i++)
+            {
+                if (bgWorkerCopy.CancellationPending) break;
+
+                var _currRow = dgvScan.Rows[i];
+
+                string _currExt = Path.GetExtension(_currRow.Cells[indexer["name"]].Value.ToString()).TrimStart('.').ToUpper();
+
+                // Ambil metadata
+                string _currDirPath = _currRow.Cells[indexer["dirPath"]].Value.ToString();
+                string _currFilename = _currRow.Cells[indexer["name"]].Value.ToString();
+                string _currDateTaken = _currRow.Cells[indexer["dateTaken"]].Value?.ToString();
+                string _currMediaCreated = _currRow.Cells[indexer["mediaCreated"]].Value?.ToString();
+                string _currFileStatus = _currRow.Cells[indexer["fileStatus"]].Value.ToString();
+
+                string _currOriStatus = _currRow.Cells[indexer["originalStatus"]].Value.ToString(); // jika masih digunakan
+
+                // Cek original status berdasarkan metadata
+                bool _currOriginalStatus = !string.IsNullOrEmpty(_currDateTaken) || !string.IsNullOrEmpty(_currMediaCreated);
+                bool _currFileStatusOK = _currFileStatus.Equals(FileStatus.Scan.Ok, StringComparison.OrdinalIgnoreCase);
+
+                bool _currIsImage = globImageExts?.Contains(_currExt) == true;
+                bool _currIsVideo = globVideoExts?.Contains(_currExt) == true;
+                bool _currIsDoc = globDocExts?.Contains(_currExt) == true;
+
+                // Fungsi bantu untuk filter ori
+                bool MatchesOri(Parameters.OriFilterOption filter, bool oriFlag) =>
+                    filter == Parameters.OriFilterOption.All ||
+                    (filter == Parameters.OriFilterOption.Ori && oriFlag) ||
+                    (filter == Parameters.OriFilterOption.NonOri && !oriFlag);
+
+                // 🔎 Proses Filter
+                bool _currShouldProcess = false;
+
+                if (param.ProcessImages && _currIsImage)
+                {
+                    if (param.OriImagesFilter == Parameters.OriFilterOption.All)
+                        _currShouldProcess = true; // Proses semua: Ori & Non-Ori
+                    else
+                        _currShouldProcess = MatchesOri(param.OriImagesFilter, _currOriginalStatus);
+                }
+                else if (param.ProcessVideos && globVideoExts.Contains(_currExt) == true)
+                {
+                    if (param.OriVideosFilter == Parameters.OriFilterOption.All)
+                        _currShouldProcess = true; // Proses semua: Ori & Non-Ori
+                    else
+                        _currShouldProcess = MatchesOri(param.OriVideosFilter, _currOriginalStatus);
+                }
+                else if (param.ProcessDocs && globDocExts.Contains(_currExt) == true)
+                {
+                    _currShouldProcess = true; // Dokumen tidak punya filter ORI/Non-Ori
+                }
+
+                // 🔍 Filter include keyword
+                if (_currShouldProcess && param.IncludeKeywords?.Count > 0 &&
+                    !param.IncludeKeywords.Any(k => _currFilename.Contains(k.ToLower())))
+                    _currShouldProcess = false;
+
+                // 🔍 Filter exclude keyword
+                if (_currShouldProcess && param.ExcludeKeywords?.Count > 0 &&
+                    param.ExcludeKeywords.Any(k => _currFilename.Contains(k.ToLower())))
+                    _currShouldProcess = false;
+
+                // 🔍 Proses file OK saja
+                if (_currShouldProcess && !_currFileStatusOK)
+                    _currShouldProcess = false;
+
+                // ❌ Jika tidak lolos filter
+                if (!_currShouldProcess)
+                {
+                    _currRow.Cells[indexer["copyStatus"]].Value += $"{FileStatus.Process.Skipped}";
+                    continue;
+                }
+
+                // ⛔ Skip file bukan "OK"
+                if (_currRow.Cells[indexer["fileStatus"]].Value.ToString() != FileStatus.Scan.Ok)
+                {
+                    _currRow.Cells[indexer["copyStatus"]].Value += $"{FileStatus.Result.Skipped}";
+                    skipCount++;
+                    continue;
+                }
+
+                DateTime myDate = GetTargetDate(_currRow);
+                string destinationDir = BuildFinalPath(baseTargetPath, myDate, subfolderFormat);
+
+                if(!Directory.Exists(destinationDir)) Directory.CreateDirectory(destinationDir);
+
+                string _currSourceFilePath = Path.Combine(_currDirPath, _currFilename);
+
+                string _currDestFilePath = Path.Combine(destinationDir, _currFilename);
+
+                try
+                {
+                    if (isFileDuplicateSize(_currSourceFilePath, _currDestFilePath))
+                    {
+                        _currRow.Cells[indexer["copyStatus"]].Value += $"{FileStatus.Result.Exist}";
+                        skipCount++;
+                        continue;
+                    }
+
+                    if (isFileDuplicateName(_currSourceFilePath, _currDestFilePath))
+                    {
+                        _currDestFilePath = GetUniqueFileName(destinationDir, Path.GetFileName(_currSourceFilePath));
+                        _currRow.Cells[indexer["copyStatus"]].Value += $"{FileStatus.Result.Renamed} ";
+                    }
+
+                    if (currentAction == FileStatus.Action.Move)
+                    {
+                        File.Move(_currSourceFilePath, _currDestFilePath);
+                        if (File.Exists(_currDestFilePath))
+                        {
+                            _currRow.Cells[indexer["copyStatus"]].Value += FileStatus.Result.Moved;
+                            if (param.DeleteAfterMove)
+                            {
+                                File.Delete(_currSourceFilePath); // Hapus file sumber jika deleteAfterMove diaktifkan
+                                if(File.Exists(_currSourceFilePath))
+                                {
+                                    _currRow.Cells[indexer["copyStatus"]].Value += FileStatus.Process.Failed + " (Failed to delete source file)";
+                                    failCount++;
+                                }
+                                else
+                                {
+                                    _currRow.Cells[indexer["copyStatus"]].Value += FileStatus.Result.Success;
+                                }   
+                            }
+                        }
+                    }
+                    else
+                    {
+                        File.Copy(_currSourceFilePath, _currDestFilePath);
+                        _currRow.Cells[indexer["copyStatus"]].Value += FileStatus.Result.Copied;
+                        if (!File.Exists(_currDestFilePath))
+                        {
+                            _currRow.Cells[indexer["copyStatus"]].Value += $"{FileStatus.Process.Error} (Failed to copy file)";
+                            failCount++;
+                            continue;
+                        }
+                        _currRow.Cells[indexer["copyStatus"]].Value += FileStatus.Result.Success;
+                    }
+
+                    successCount++;
+                }
+                catch (Exception ex)
+                {
+                    _currRow.Cells[indexer["copyStatus"]].Value += $"{FileStatus.Process.Error}: {ex.Message}";
+                    failCount++;
+                }
+
+                addLog($"[{i + 1}/{total}] {_currRow.Cells[indexer["name"]].Value} => {_currRow.Cells[indexer["copyStatus"]].Value.ToString()}");
+
+                // 🔄 Update UI progress
+                int progress = (int)((i / (double)total) * 100);
+
+                var resultItem = new
+                {
+                    Index = i + 1,
+                    Total = total,
+                    SuccessCount = successCount,
+                    SkipCount = skipCount,
+                    FailCount = failCount,
+                    SourceFile = _currSourceFilePath,
+                    DestFile = _currDestFilePath,
+                };
+                bgWorkerCopy.ReportProgress(progress, resultItem); // Laporan progress ke UI
+                e.Result = resultItem; // Simpan hasil untuk digunakan di RunWorkerCompleted
+            }
         }
-
         private void bgWorkerCopy_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
-            progressBarScan.Value = Math.Min(e.ProgressPercentage, 100);
+            progressBarGlobal.Value = Math.Min(e.ProgressPercentage, 100);
             var data = e.UserState as dynamic;
-            toolStripLabelProgress.Text = $"{currentState}: {data.Index + 1}/{data.Total} to {data.DestFile}";
-        }
 
+            progressBarGlobal.Value = e.ProgressPercentage;
+
+            labelProgress.Text = $"{currentState}: {data.SourceFile} to {data.DestFile} | Progress: {data.Index} of {data.Total} files.";
+        }
         private void bgWorkerCopy_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            btnCopy.Enabled = true;
-            btnMove.Enabled = true;
+            // Pastikan untuk mengembalikan UI ke keadaan normal
+            var result = e.Result;
+            dynamic data = result;
+
+            Cursor.Current = Cursors.Default;
+            buttonProcess.Enabled = true;
             btnCopyStop.Enabled = false;
-            toolStripProgressBarPerFile.Visible = false;
+            progressBarGlobal.Value = 100;
+            int scannedCount = dgvScan.Rows.Count;
+            processEndTime = DateTime.Now; // Set waktu akhir scan
+
+            progressBarPerFile.Visible = false;
 
             if (e.Cancelled)
             {
-                currentState = Status.Process.Stopping; // Set state ke Stopping
-                toolStripLabelProgress.Text = $"Proses {currentAction} dibatalkan.";
+                currentState = FileStatus.Process.Canceled;
+                MessageBox.Show($"Process {currentAction} {currentState} by user.", "Cancelled", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
             }
             else if (e.Error != null)
             {
-                toolStripLabelProgress.Text = $"Terjadi {Status.Process.Error} saat {currentState}.";
+                MessageBox.Show($"Kesalahan saat {currentAction}: " + e.Error.Message);
+                currentState = FileStatus.Process.Failed;
             }
             else
             {
-                progressBarScan.Value = 100;
-                toolStripProgressBarPerFile.Value = 100;
+                progressBarGlobal.Value = 100;
+                progressBarPerFile.Value = 100;
 
-                toolStripLabelProgress.GetCurrentParent()?.Refresh();
+                labelProgress.GetCurrentParent()?.Refresh();
 
-                toolStripLabelProgress.Text = $"{currentState}: {totalDataToCopy}/{totalDataToCopy} data selesai.";
+                labelProgress.Text = $"{currentState}: {totalDataToCopy}/{totalDataToCopy} data completed.";
+                currentState = FileStatus.Process.Completed; // Set state ke Completed
             }
-            Cursor.Current = Cursors.Default;
 
-            int copied = dgvScan.Rows.Cast<DataGridViewRow>().Count(r => r.Cells[indexer["copyStatus"]].Value.ToString().Contains(Status.Copy.Success));
-            int failed = dgvScan.Rows.Cast<DataGridViewRow>().Count(r => r.Cells[indexer["copyStatus"]].Value?.ToString() == Status.Copy.Failed
-            || r.Cells[indexer["copyStatus"]].Value?.ToString() == Status.Copy.Error);
-            int total = dgvScan.Rows.Cast<DataGridViewRow>().Count(r => r.Cells[indexer["copyStatus"]].Value?.ToString() != null);
-            MessageBox.Show($"{currentAction} selesai:\nTotal: {totalDataToCopy}\nSukses: {(copied > totalDataToCopy ? 0 : copied)}\nGagal: {failed}", "Hasil {currentState}");
-            //MessageBox.Show($"Copy selesai:\nSukses: {copied}\nGagal: {failed}", "Hasil Copy");
+            TimeSpan duration = processEndTime - processStartTime;
 
+            labelProgress.Text = $"{currentAction} completed." +
+                $" Total: {data.Total}" +
+                $", Success: {data.SuccessCount}" +
+                $", Skip: {data.SkipCount}" +
+                $", Fail: {data.FailCount}";
 
-            addLog($"Total: {totalDataToCopy}");
-            addLog($"Sukses: {(copied > totalDataToCopy ? 0 : copied)}");
-            addLog($"Gagal: {failed} Hasil {currentState}");
-            currentState = Status.Process.Done; // Reset state setelah selesai
-            addLog();
-            currentState.Normalize(); // Reset currentState ke None setelah selesai
-            currentAction.Normalize(); // Reset currentAction ke None setelah selesai
+            // Tampilkan hasil akhir
+            MessageBox.Show($"{currentAction} selesai:\nTotal: {data.Total}" +
+                $"\nSuccess: {data.SuccessCount}" +
+                $"\nSkip: {data.SkipCount}" +
+                $"\nFail: {data.FailCount}",
+                $"Hasil {currentAction}");
+
+            addLog($"Finished {currentState} {data.Total} files.");
+            addLog($"Success: {data.SuccessCount}");
+            addLog($"Skip: {data.SkipCount}");
+            addLog($"Fail: {data.FailCount}");
+            addLog($"{data.Total} duration: {duration.TotalSeconds:F2} seconds.");
+
+            currentState = FileStatus.Process.Completed;
+            addLog(); // akan log sesuai status
+            addLog(" ----------------------------------- ");
+            currentAction = FileStatus.Action.None; // Reset currentAction ke None setelah selesai
+            //currentState = FileStatus.Process.None; // Reset currentState ke None setelah selesai
         }
-
-        private void DoCopyFiles(string mainPath, string subPath, BackgroundWorker worker, DoWorkEventArgs e)
+        private void btnCopyStop_Click(object sender, EventArgs e)
         {
-            if (worker.CancellationPending)
+            if (bgWorkerScan.IsBusy)
             {
-                e.Cancel = true; // <- ini perlu ditambahkan
-                return;
-            }
-            string copySubFolderFormat = "";
-            comboBoxCopySubFolder.Invoke((MethodInvoker)(() =>
-            {
-                copySubFolderFormat = comboBoxCopySubFolder.Text;
-            }));
+                bgWorkerCopy.CancelAsync();
+                btnCopyStop.Enabled = false;
+                currentState = FileStatus.Process.Canceled; // Set currentState ke Stopping
 
-            totalDataToCopy = dgvScan.InvokeRequired ? (int)dgvScan.Invoke(() => dgvScan.RowCount) : dgvScan.RowCount;
-            if (totalDataToCopy == 0)
-            {
-                dgvScan.Invoke((MethodInvoker)(() =>
-                {
-                    toolStripLabelProgress.Text = $"Tidak ada file yang akan di-{currentAction.ToUpper()}.";
-                }));
-                return;
-            }
-            int current = 0;
-            int processed = 0;
-            for (int i = 0; i < totalDataToCopy; i++)
-            {
-                if (worker.CancellationPending)
-                {
-                    e.Cancel = true;
-                    break;
-                }
-
-                DataGridViewRow row = null;
-                dgvScan.Invoke((MethodInvoker)(() => { row = dgvScan.Rows[i]; }));
-
-                DateTime myDate = GetTargetDate(row);
-                string finalPath = BuildFinalPath(mainPath, myDate, copySubFolderFormat);
-
-                string sourceFile = Path.Combine(row.Cells[indexer["path"]].Value.ToString(), row.Cells[indexer["name"]].Value.ToString());
-                string destFile = Path.Combine(finalPath, Path.GetFileName(sourceFile));
-
-                List<string> status = new List<string>();
-
-                if (ShouldCopyRow(row)) // Cek apakah baris ini perlu disalin
-                {
-                    if (isFileDuplicateSize(sourceFile, destFile))
-                    {
-                        if (currentAction == Status.Action.Copy || currentAction == Status.Action.Move)
-                            status.Add(Status.Copy.Exist);
-                    }
-                    else if (isFileDuplicateName(sourceFile, destFile))
-                    {
-                        destFile = GetUniqueFileName(finalPath, Path.GetFileName(sourceFile));
-                        status.Add(Status.Copy.Rename);
-                    }
-
-                    try
-                    {
-                        if (!Directory.Exists(finalPath))
-                            Directory.CreateDirectory(finalPath);
-
-                        bool success = CopyAndVerifyWithProgressOrMove(sourceFile, destFile, worker);
-                        status.Add(success ? Status.Copy.Success : Status.Copy.Failed);
-                    }
-                    catch (Exception)
-                    {
-                        status.Add(Status.Copy.Error);
-                    }
-                }
-                else
-                {
-                    status.Add(Status.Copy.Skip);
-                }
-
-                // Update ke UI: status dan progress
-                string finalStatus = string.Join(" ", status);
-                dgvScan.Invoke((MethodInvoker)(() =>
-                {
-                    row.Cells[indexer["copyStatus"]].Value = finalStatus;
-                }));
-
-                current++;
-                processed++;
-
-                int progress = (int)((current / (double)totalDataToCopy) * 100);
-                bgWorkerCopy?.ReportProgress(progress, new
-                {
-                    Index = processed,
-                    Total = totalDataToCopy,
-                    DestFile = destFile
-                });
+                addLog(); // akan log: "Proses dihentikan oleh pengguna."
+                addLog(" ----------------------------------- ");
+                currentAction = FileStatus.Action.None; // Set currentAction ke Stop
             }
         }
-
 
         private string GetUniqueFileName(string destFolder, string originalFileName)
         {
@@ -603,47 +641,6 @@ namespace File_Management_v2
 
             return Path.Combine(destFolder, newFileName);
         }
-
-        private bool ShouldCopyRow(DataGridViewRow row)
-        {
-            string ext = Path.GetExtension(row.Cells[indexer["name"]].Value?.ToString() ?? "").ToUpper();
-            string type = row.Cells[indexer["type"]].Value?.ToString().ToUpper(); // Type
-            string status = row.Cells[indexer["fileStatus"]].Value?.ToString();
-            string statusCopy = row.Cells[indexer["copyStatus"]].Value?.ToString();
-
-            if (status != Status.Scan.Display && statusCopy == Status.Copy.Failed) return false;
-
-            bool isImage = imageExts != null && imageExts.Contains(ext);
-            bool isVideo = videoExts != null && videoExts.Contains(ext);
-            bool isDocument = docExts != null && docExts.Contains(ext);
-
-            bool dateTaken = !string.IsNullOrEmpty(row.Cells[indexer["dateTaken"]].Value?.ToString());
-            bool mediaCreated = !string.IsNullOrEmpty(row.Cells[indexer["mediaCreated"]].Value?.ToString());
-
-            bool isAsli = row.Cells[indexer["originalStatus"]].Value?.ToString() == "Ori";
-            bool isCopied = statusCopy == Status.Copy.Success;
-
-            if (chkBoxCopyImages.Checked && isImage && !isCopied)
-            {
-                if (rbtnImageAll.Checked) return true;
-                if (rbtnImageOri.Checked) return dateTaken && isAsli;
-                if (rbtnImageNonOri.Checked) return !dateTaken && !isAsli;
-            }
-
-            if (chkBoxCopyVideos.Checked && isVideo && !isCopied)
-            {
-                if (rbtnVideoAll.Checked) return true;
-                if (rbtnVideoOri.Checked) return mediaCreated && isAsli;
-                if (rbtnVideoNonOri.Checked) return !mediaCreated && !isAsli;
-            }
-
-            if (chkBoxCopyDocuments.Checked && isDocument && !isCopied)
-            {
-                return true;
-            }
-            return false;
-        }
-
         private DateTime GetTargetDate(DataGridViewRow row)
         {
             string dateTaken = row.Cells[indexer["dateTaken"]].Value?.ToString();
@@ -656,7 +653,6 @@ namespace File_Management_v2
 
             return DateTime.Now;
         }
-
         private string BuildFinalPath(string mainPath, DateTime date, string subPathFormat)
         {
             // Misalnya: subPathFormat = "/yyyy/yyyy_MM/yyyy_MM_dd"
@@ -707,113 +703,6 @@ namespace File_Management_v2
             return false;
         }
 
-        private bool CopyAndVerifyWithProgressOrMove(string sourceFile, string destFile, BackgroundWorker worker)
-        {
-            try
-            {
-                // Jika mode MOVE dan file tujuan belum ada, gunakan File.Move()
-                if (currentState == Status.Process.Moving)
-                {
-                    if (!File.Exists(destFile))
-                        File.Move(sourceFile, destFile);
-
-                    if (moveAndDelete && File.Exists(destFile) && isFileDuplicateSize(sourceFile, destFile)) // Jika file sudah ada di tujuan dan ukurannya sama, hapus file sumber
-                        File.Delete(sourceFile);
-                    return true;
-                }
-
-                // Default: Copy with progress
-                const int bufferSize = 1024 * 1024; // 1MB
-                byte[] buffer = new byte[bufferSize];
-
-                long totalBytes = new FileInfo(sourceFile).Length;
-                long totalCopied = 0;
-
-                toolStripProgressBarPerFile.GetCurrentParent().Invoke((MethodInvoker)(() =>
-                {
-                    toolStripProgressBarPerFile.Minimum = 0;
-                    toolStripProgressBarPerFile.Maximum = 100;
-                    toolStripProgressBarPerFile.Value = 0;
-                }));
-
-                using (var sourceStream = new FileStream(sourceFile, FileMode.Open, FileAccess.Read))
-                using (var destStream = new FileStream(destFile, FileMode.Create, FileAccess.Write))
-                {
-                    int bytesRead;
-                    while ((bytesRead = sourceStream.Read(buffer, 0, buffer.Length)) > 0)
-                    {
-                        if (worker.CancellationPending)
-                        {
-                            return false;
-                        }
-
-                        destStream.Write(buffer, 0, bytesRead);
-                        totalCopied += bytesRead;
-
-                        int percent = (int)(totalCopied * 100 / totalBytes);
-                        toolStripProgressBarPerFile.GetCurrentParent().Invoke((MethodInvoker)(() =>
-                        {
-                            toolStripProgressBarPerFile.Value = percent;
-                        }));
-                    }
-                }
-
-                return isFileDuplicateSize(sourceFile, destFile); // Kembalikan true jika file berhasil disalin dan ukurannya cocok
-            }
-            catch (IOException ioex)
-            {
-                // Optional: Log khusus IO error
-                Console.WriteLine("IO error: " + ioex.Message);
-                return false;
-            }
-            catch (Exception ex)
-            {
-                // Optional: Log general error
-                Console.WriteLine("Error: " + ex.Message);
-                return false;
-            }
-        }
-
-        private void DoCopyUpdateDGV(dynamic data)
-        {
-            try
-            {
-                dgvScan.Rows.Add(
-                    data.Index + 1,
-                    data.FileLocation,
-                    data.Name,
-                    data.Type,
-                    data.SizeBytes,
-                    data.DateTaken,
-                    data.MediaCreated,
-                    !String.IsNullOrEmpty(data.DateTaken) || !String.IsNullOrEmpty(data.MediaCreated) ? "Asli" : "",
-                    data.DateCreated,
-                    "Display"
-                );
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Error update DGV: {ex.Message}");
-            }
-        }
-
-        private void ResetCopiedStatus() //copy ulang file yang sudah "Copied"
-        {
-            totalDataToCopy = 0;
-            dgvScan.Invoke((MethodInvoker)(() =>
-            {
-                foreach (DataGridViewRow row in dgvScan.Rows)
-                {
-                    if (row.Cells[indexer["copyStatus"]].Value?.ToString() == Status.Copy.Copied
-                    || row.Cells[indexer["copyStatus"]].Value?.ToString() == Status.Copy.Failed
-                    || row.Cells[indexer["copyStatus"]].Value?.ToString() == Status.Copy.Error)
-                    {
-                        row.Cells[indexer["copyStatus"]].Value = Status.Copy.Error;
-                    }
-                }
-            }));
-        }
-
         #endregion COPY FILES
 
 
@@ -825,28 +714,28 @@ namespace File_Management_v2
             {
                 switch (currentState)
                 {
-                    case Status.Process.Initiating:
-                    case Status.Process.Done:
-                        message = $"Proses {currentAction.ToUpper()} {(currentState == Status.Process.Initiating ? "dimulai" : "selesai")}.";
+                    case FileStatus.Process.Running:
+                    case FileStatus.Process.Completed:
+                        message = $"Proses {currentAction.ToUpper()} {(currentState == FileStatus.Process.Running ? "dimulai" : "selesai")}.";
                         break;
 
-                    case Status.Process.Scanning:
+                    case FileStatus.Process.Scanning:
                         message = "Memindai file...";
                         break;
 
-                    case Status.Process.Copying:
+                    case FileStatus.Process.Copying:
                         message = "Menyalin file...";
                         break;
 
-                    case Status.Process.Moving:
+                    case FileStatus.Process.Moving:
                         message = "Memindahkan file...";
                         break;
 
-                    case Status.Process.Stopping:
+                    case FileStatus.Process.Canceled:
                         message = "Proses dihentikan oleh pengguna.";
                         break;
 
-                    case Status.Process.Error:
+                    case FileStatus.Process.Error:
                         message = "Terjadi kesalahan selama proses.";
                         break;
 
@@ -882,23 +771,30 @@ namespace File_Management_v2
                     lstBoxLog.Items.RemoveAt(lstBoxLog.Items.Count - 1);
             }
         }
-
         #endregion LOGGING
 
+        #region PREVIEW IMAGE
         private Image LoadImageSafe(string path)
         {
-            byte[] imageBytes = File.ReadAllBytes(path);
-            using (MemoryStream ms = new MemoryStream(imageBytes))
+            try
             {
-                return Image.FromStream(ms); // Image tetap valid setelah ms dibuang
+                byte[] imageBytes = File.ReadAllBytes(path);
+                using (MemoryStream ms = new MemoryStream(imageBytes))
+                {
+                    return Image.FromStream(ms);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log the error and return a placeholder image or null
+                return null;
             }
         }
-
         private void dgvScan_SelectionChanged(object sender, EventArgs e)
         {
             try
             {
-                if (currentAction != Status.Action.None) return;
+                if (currentAction != FileStatus.Action.None) return;
                 // Hapus gambar lama
                 picBox.Image?.Dispose();
                 if (dgvScan.CurrentCell == null || dgvScan.CurrentCell.RowIndex == dgvScan.NewRowIndex)
@@ -908,7 +804,7 @@ namespace File_Management_v2
                 DataGridViewRow row = dgvScan.Rows[rowIndex];
 
                 string filePath = Path.Combine(
-                    row.Cells[indexer["path"]].Value?.ToString() ?? "",
+                    row.Cells[indexer["dirPath"]].Value?.ToString() ?? "",
                     row.Cells[indexer["name"]].Value?.ToString() ?? ""
                 );
 
@@ -917,8 +813,8 @@ namespace File_Management_v2
                 if (filePath == _lastPreviewFilePath) return;
                 _lastPreviewFilePath = filePath;
 
-                string ext = Path.GetExtension(filePath).ToUpper();
-                bool isImage = imageExts.Contains(ext);
+                string ext = Path.GetExtension(filePath).TrimStart('.').ToUpper();
+                bool isImage = globImageExts.Contains(ext);
 
                 if (isImage)
                 {
@@ -934,16 +830,21 @@ namespace File_Management_v2
             {
             }
         }
-
+        #endregion PREVIEW IMAGE
 
 
         #region PARAMETER COPY
         private void btnCopyBrowse_Click(object sender, EventArgs e)
         {
-            if (folderBrowserCopy.ShowDialog() == DialogResult.OK)
+            using (var folderBrowserCopy = new FolderBrowserDialog())
             {
-                txtCopyPath.Text = folderBrowserCopy.SelectedPath;
-                btnProcess.Enabled = true;
+                folderBrowserCopy.Description = "Pilih Folder Tujuan Copy";
+                folderBrowserCopy.SelectedPath = txtCopyPath.Text; // opsional
+                if (folderBrowserCopy.ShowDialog() == DialogResult.OK)
+                {
+                    txtCopyPath.Text = folderBrowserCopy.SelectedPath;
+                    buttonProcess.Enabled = true;
+                }
             }
         }
         private void txtCopyPath_TextChanged(object sender, EventArgs e)
@@ -961,10 +862,10 @@ namespace File_Management_v2
                 bool isValidPath = Directory.Exists(txtCopyPath.Text);
                 bool isValidSubFolder = !string.IsNullOrWhiteSpace(comboBoxCopySubFolder.Text);
 
-                btnProcess.Enabled = isValidPath && isValidSubFolder; // Aktifkan tombol jika path valid
+                buttonProcess.Enabled = isValidPath && isValidSubFolder; // Aktifkan tombol jika path valid
                 radioButtonProcessCopy.Enabled = isValidPath && isValidSubFolder; // Aktifkan tombol Copy jika path valid
                 radioButtonProcessMove.Enabled = isValidPath && isValidSubFolder; // Aktifkan tombol Move jika path valid
-                btnProcess.Enabled = isValidPath && isValidSubFolder; // Aktifkan tombol jika path valid
+                buttonProcess.Enabled = isValidPath && isValidSubFolder; // Aktifkan tombol jika path valid
 
                 checkBoxMoveDeleteFiles.Enabled = radioButtonProcessMove.Checked; // Aktifkan checkbox Move Delete Files jika tombol Move dipilih
 
@@ -979,38 +880,33 @@ namespace File_Management_v2
                 string format = comboBoxCopySubFolder.Text;
 
                 string preview = BuildFinalPath(mainPath, currentDateTime, format);
-                lblCopyPathFinalPreview.Text = $"{btnProcess.Text} to {preview}";
+                lblCopyPathFinalPreview.Text = $"{buttonProcess.Text} to {preview}";
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error saat membangun path: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-        private void chkBoxCopyImages_CheckedChanged(object sender, EventArgs e)
+        private void checkBoxCopyImages_CheckedChanged(object sender, EventArgs e)
         {
             // Aktifkan atau nonaktifkan tombol radio berdasarkan checkbox
-            rbtnImageAll.Enabled = chkBoxCopyImages.Checked;
-            rbtnImageOri.Enabled = chkBoxCopyImages.Checked;
-            rbtnImageNonOri.Enabled = chkBoxCopyImages.Checked;
+            radioProcessImageAll.Enabled = checkBoxCopyImages.Checked;
+            radioProcessImageOri.Enabled = checkBoxCopyImages.Checked;
+            radioProcessImageNonOri.Enabled = checkBoxCopyImages.Checked;
         }
-        private void chkBoxCopyVideos_CheckedChanged(object sender, EventArgs e)
+        private void checkBoxCopyVideos_CheckedChanged(object sender, EventArgs e)
         {
             // Aktifkan atau nonaktifkan tombol radio berdasarkan checkbox
-            rbtnVideoAll.Enabled = chkBoxCopyVideos.Checked;
-            rbtnVideoOri.Enabled = chkBoxCopyVideos.Checked;
-            rbtnVideoNonOri.Enabled = chkBoxCopyVideos.Checked;
+            radioProcessVideoAll.Enabled = checkBoxCopyVideos.Checked;
+            radioProcessVideoOri.Enabled = checkBoxCopyVideos.Checked;
+            radioProcessVideoNonOri.Enabled = checkBoxCopyVideos.Checked;
         }
         private void radioButtonProcessCopy_CheckedChanged(object sender, EventArgs e)
         {
             checkBoxMoveDeleteFiles.Enabled = !radioButtonProcessCopy.Checked;
-            btnProcess.Text = radioButtonProcessCopy.Checked ? "Copy" : "Move";
+            buttonProcess.Text = radioButtonProcessCopy.Checked ? "Copy" : "Move";
             activateBtnProcessData();
         }
-        private void btnProcess_Click(object sender, EventArgs e)
-        {
-
-        }
-
         #endregion PARAMETER COPY
     }
 }

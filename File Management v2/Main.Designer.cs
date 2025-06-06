@@ -33,7 +33,7 @@
             groupBox1 = new GroupBox();
             dgvScan = new DataGridView();
             no = new DataGridViewTextBoxColumn();
-            directory = new DataGridViewTextBoxColumn();
+            dirPath = new DataGridViewTextBoxColumn();
             name = new DataGridViewTextBoxColumn();
             type = new DataGridViewTextBoxColumn();
             size = new DataGridViewTextBoxColumn();
@@ -80,19 +80,19 @@
             checkBoxMoveDeleteFiles = new CheckBox();
             radioButtonProcessMove = new RadioButton();
             radioButtonProcessCopy = new RadioButton();
-            btnProcess = new Button();
+            buttonProcess = new Button();
             checkBoxMoveDeleteFile = new CheckBox();
             gBoxCopyImages = new GroupBox();
-            rbtnImageAll = new RadioButton();
-            rbtnImageOri = new RadioButton();
-            rbtnImageNonOri = new RadioButton();
+            radioProcessImageAll = new RadioButton();
+            radioProcessImageOri = new RadioButton();
+            radioProcessImageNonOri = new RadioButton();
             gBoxCopyVideos = new GroupBox();
-            rbtnVideoAll = new RadioButton();
-            rbtnVideoOri = new RadioButton();
-            rbtnVideoNonOri = new RadioButton();
-            chkBoxCopyImages = new CheckBox();
-            chkBoxCopyVideos = new CheckBox();
-            chkBoxCopyDocuments = new CheckBox();
+            radioProcessVideoAll = new RadioButton();
+            radioProcessVideoOri = new RadioButton();
+            radioProcessVideoNonOri = new RadioButton();
+            checkBoxCopyImages = new CheckBox();
+            checkBoxCopyVideos = new CheckBox();
+            checkBoxCopyDocs = new CheckBox();
             comboBoxCopySubFolder = new ComboBox();
             lblCopyPathFinalPreview = new Label();
             label3 = new Label();
@@ -108,9 +108,9 @@
             rtBoxLog = new RichTextBox();
             lstBoxLog = new ListBox();
             statusStrip1 = new StatusStrip();
-            progressBarScan = new ToolStripProgressBar();
-            toolStripLabelProgress = new ToolStripStatusLabel();
-            toolStripProgressBarPerFile = new ToolStripProgressBar();
+            progressBarGlobal = new ToolStripProgressBar();
+            labelProgress = new ToolStripStatusLabel();
+            progressBarPerFile = new ToolStripProgressBar();
             folderBrowserScan = new FolderBrowserDialog();
             bgWorkerScan = new System.ComponentModel.BackgroundWorker();
             bgWorkerCopy = new System.ComponentModel.BackgroundWorker();
@@ -174,7 +174,7 @@
             dgvScan.AllowUserToDeleteRows = false;
             dgvScan.AllowUserToOrderColumns = true;
             dgvScan.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dgvScan.Columns.AddRange(new DataGridViewColumn[] { no, directory, name, type, size, originalStatus, dateTaken, mediaCreated, dateCreated, fileStatus, copyStatus });
+            dgvScan.Columns.AddRange(new DataGridViewColumn[] { no, dirPath, name, type, size, originalStatus, dateTaken, mediaCreated, dateCreated, fileStatus, copyStatus });
             dgvScan.Dock = DockStyle.Fill;
             dgvScan.Location = new Point(3, 19);
             dgvScan.Name = "dgvScan";
@@ -190,12 +190,12 @@
             no.ReadOnly = true;
             no.Width = 50;
             // 
-            // directory
+            // dirPath
             // 
-            directory.HeaderText = "Directory";
-            directory.Name = "directory";
-            directory.ReadOnly = true;
-            directory.Width = 150;
+            dirPath.HeaderText = "Directory";
+            dirPath.Name = "dirPath";
+            dirPath.ReadOnly = true;
+            dirPath.Width = 150;
             // 
             // name
             // 
@@ -630,13 +630,13 @@
             // groupBox3
             // 
             groupBox3.Controls.Add(panel4);
-            groupBox3.Controls.Add(btnProcess);
+            groupBox3.Controls.Add(buttonProcess);
             groupBox3.Controls.Add(checkBoxMoveDeleteFile);
             groupBox3.Controls.Add(gBoxCopyImages);
             groupBox3.Controls.Add(gBoxCopyVideos);
-            groupBox3.Controls.Add(chkBoxCopyImages);
-            groupBox3.Controls.Add(chkBoxCopyVideos);
-            groupBox3.Controls.Add(chkBoxCopyDocuments);
+            groupBox3.Controls.Add(checkBoxCopyImages);
+            groupBox3.Controls.Add(checkBoxCopyVideos);
+            groupBox3.Controls.Add(checkBoxCopyDocs);
             groupBox3.Controls.Add(comboBoxCopySubFolder);
             groupBox3.Controls.Add(lblCopyPathFinalPreview);
             groupBox3.Controls.Add(label3);
@@ -702,15 +702,15 @@
             radioButtonProcessCopy.UseVisualStyleBackColor = true;
             radioButtonProcessCopy.CheckedChanged += radioButtonProcessCopy_CheckedChanged;
             // 
-            // btnProcess
+            // buttonProcess
             // 
-            btnProcess.Location = new Point(553, 112);
-            btnProcess.Name = "btnProcess";
-            btnProcess.Size = new Size(119, 99);
-            btnProcess.TabIndex = 15;
-            btnProcess.Text = "Copy";
-            btnProcess.UseVisualStyleBackColor = true;
-            btnProcess.Click += btnProcess_Click;
+            buttonProcess.Location = new Point(553, 112);
+            buttonProcess.Name = "buttonProcess";
+            buttonProcess.Size = new Size(119, 99);
+            buttonProcess.TabIndex = 15;
+            buttonProcess.Text = "Copy";
+            buttonProcess.UseVisualStyleBackColor = true;
+            buttonProcess.Click += buttonProcess_Click;
             // 
             // checkBoxMoveDeleteFile
             // 
@@ -723,130 +723,130 @@
             // 
             // gBoxCopyImages
             // 
-            gBoxCopyImages.Controls.Add(rbtnImageAll);
-            gBoxCopyImages.Controls.Add(rbtnImageOri);
-            gBoxCopyImages.Controls.Add(rbtnImageNonOri);
+            gBoxCopyImages.Controls.Add(radioProcessImageAll);
+            gBoxCopyImages.Controls.Add(radioProcessImageOri);
+            gBoxCopyImages.Controls.Add(radioProcessImageNonOri);
             gBoxCopyImages.Location = new Point(187, 145);
             gBoxCopyImages.Name = "gBoxCopyImages";
             gBoxCopyImages.Size = new Size(258, 41);
             gBoxCopyImages.TabIndex = 13;
             gBoxCopyImages.TabStop = false;
             // 
-            // rbtnImageAll
+            // radioProcessImageAll
             // 
-            rbtnImageAll.AutoSize = true;
-            rbtnImageAll.Checked = true;
-            rbtnImageAll.Enabled = false;
-            rbtnImageAll.Location = new Point(6, 14);
-            rbtnImageAll.Name = "rbtnImageAll";
-            rbtnImageAll.Size = new Size(39, 19);
-            rbtnImageAll.TabIndex = 10;
-            rbtnImageAll.TabStop = true;
-            rbtnImageAll.Text = "All";
-            rbtnImageAll.UseVisualStyleBackColor = true;
+            radioProcessImageAll.AutoSize = true;
+            radioProcessImageAll.Checked = true;
+            radioProcessImageAll.Enabled = false;
+            radioProcessImageAll.Location = new Point(6, 14);
+            radioProcessImageAll.Name = "radioProcessImageAll";
+            radioProcessImageAll.Size = new Size(39, 19);
+            radioProcessImageAll.TabIndex = 10;
+            radioProcessImageAll.TabStop = true;
+            radioProcessImageAll.Text = "All";
+            radioProcessImageAll.UseVisualStyleBackColor = true;
             // 
-            // rbtnImageOri
+            // radioProcessImageOri
             // 
-            rbtnImageOri.AutoSize = true;
-            rbtnImageOri.Enabled = false;
-            rbtnImageOri.Location = new Point(61, 14);
-            rbtnImageOri.Name = "rbtnImageOri";
-            rbtnImageOri.Size = new Size(41, 19);
-            rbtnImageOri.TabIndex = 10;
-            rbtnImageOri.Text = "Ori";
-            rbtnImageOri.UseVisualStyleBackColor = true;
+            radioProcessImageOri.AutoSize = true;
+            radioProcessImageOri.Enabled = false;
+            radioProcessImageOri.Location = new Point(61, 14);
+            radioProcessImageOri.Name = "radioProcessImageOri";
+            radioProcessImageOri.Size = new Size(41, 19);
+            radioProcessImageOri.TabIndex = 10;
+            radioProcessImageOri.Text = "Ori";
+            radioProcessImageOri.UseVisualStyleBackColor = true;
             // 
-            // rbtnImageNonOri
+            // radioProcessImageNonOri
             // 
-            rbtnImageNonOri.AutoSize = true;
-            rbtnImageNonOri.Enabled = false;
-            rbtnImageNonOri.Location = new Point(113, 14);
-            rbtnImageNonOri.Name = "rbtnImageNonOri";
-            rbtnImageNonOri.Size = new Size(67, 19);
-            rbtnImageNonOri.TabIndex = 10;
-            rbtnImageNonOri.Text = "Non Ori";
-            rbtnImageNonOri.UseVisualStyleBackColor = true;
+            radioProcessImageNonOri.AutoSize = true;
+            radioProcessImageNonOri.Enabled = false;
+            radioProcessImageNonOri.Location = new Point(113, 14);
+            radioProcessImageNonOri.Name = "radioProcessImageNonOri";
+            radioProcessImageNonOri.Size = new Size(67, 19);
+            radioProcessImageNonOri.TabIndex = 10;
+            radioProcessImageNonOri.Text = "Non Ori";
+            radioProcessImageNonOri.UseVisualStyleBackColor = true;
             // 
             // gBoxCopyVideos
             // 
-            gBoxCopyVideos.Controls.Add(rbtnVideoAll);
-            gBoxCopyVideos.Controls.Add(rbtnVideoOri);
-            gBoxCopyVideos.Controls.Add(rbtnVideoNonOri);
+            gBoxCopyVideos.Controls.Add(radioProcessVideoAll);
+            gBoxCopyVideos.Controls.Add(radioProcessVideoOri);
+            gBoxCopyVideos.Controls.Add(radioProcessVideoNonOri);
             gBoxCopyVideos.Location = new Point(187, 178);
             gBoxCopyVideos.Name = "gBoxCopyVideos";
             gBoxCopyVideos.Size = new Size(258, 41);
             gBoxCopyVideos.TabIndex = 12;
             gBoxCopyVideos.TabStop = false;
             // 
-            // rbtnVideoAll
+            // radioProcessVideoAll
             // 
-            rbtnVideoAll.AutoSize = true;
-            rbtnVideoAll.Checked = true;
-            rbtnVideoAll.Enabled = false;
-            rbtnVideoAll.Location = new Point(6, 14);
-            rbtnVideoAll.Name = "rbtnVideoAll";
-            rbtnVideoAll.Size = new Size(39, 19);
-            rbtnVideoAll.TabIndex = 10;
-            rbtnVideoAll.TabStop = true;
-            rbtnVideoAll.Text = "All";
-            rbtnVideoAll.UseVisualStyleBackColor = true;
+            radioProcessVideoAll.AutoSize = true;
+            radioProcessVideoAll.Checked = true;
+            radioProcessVideoAll.Enabled = false;
+            radioProcessVideoAll.Location = new Point(6, 14);
+            radioProcessVideoAll.Name = "radioProcessVideoAll";
+            radioProcessVideoAll.Size = new Size(39, 19);
+            radioProcessVideoAll.TabIndex = 10;
+            radioProcessVideoAll.TabStop = true;
+            radioProcessVideoAll.Text = "All";
+            radioProcessVideoAll.UseVisualStyleBackColor = true;
             // 
-            // rbtnVideoOri
+            // radioProcessVideoOri
             // 
-            rbtnVideoOri.AutoSize = true;
-            rbtnVideoOri.Enabled = false;
-            rbtnVideoOri.Location = new Point(61, 14);
-            rbtnVideoOri.Name = "rbtnVideoOri";
-            rbtnVideoOri.Size = new Size(41, 19);
-            rbtnVideoOri.TabIndex = 10;
-            rbtnVideoOri.Text = "Ori";
-            rbtnVideoOri.UseVisualStyleBackColor = true;
+            radioProcessVideoOri.AutoSize = true;
+            radioProcessVideoOri.Enabled = false;
+            radioProcessVideoOri.Location = new Point(61, 14);
+            radioProcessVideoOri.Name = "radioProcessVideoOri";
+            radioProcessVideoOri.Size = new Size(41, 19);
+            radioProcessVideoOri.TabIndex = 10;
+            radioProcessVideoOri.Text = "Ori";
+            radioProcessVideoOri.UseVisualStyleBackColor = true;
             // 
-            // rbtnVideoNonOri
+            // radioProcessVideoNonOri
             // 
-            rbtnVideoNonOri.AutoSize = true;
-            rbtnVideoNonOri.Enabled = false;
-            rbtnVideoNonOri.Location = new Point(113, 14);
-            rbtnVideoNonOri.Name = "rbtnVideoNonOri";
-            rbtnVideoNonOri.Size = new Size(67, 19);
-            rbtnVideoNonOri.TabIndex = 10;
-            rbtnVideoNonOri.Text = "Non Ori";
-            rbtnVideoNonOri.UseVisualStyleBackColor = true;
+            radioProcessVideoNonOri.AutoSize = true;
+            radioProcessVideoNonOri.Enabled = false;
+            radioProcessVideoNonOri.Location = new Point(113, 14);
+            radioProcessVideoNonOri.Name = "radioProcessVideoNonOri";
+            radioProcessVideoNonOri.Size = new Size(67, 19);
+            radioProcessVideoNonOri.TabIndex = 10;
+            radioProcessVideoNonOri.Text = "Non Ori";
+            radioProcessVideoNonOri.UseVisualStyleBackColor = true;
             // 
-            // chkBoxCopyImages
+            // checkBoxCopyImages
             // 
-            chkBoxCopyImages.AutoSize = true;
-            chkBoxCopyImages.Enabled = false;
-            chkBoxCopyImages.Location = new Point(117, 159);
-            chkBoxCopyImages.Name = "chkBoxCopyImages";
-            chkBoxCopyImages.Size = new Size(64, 19);
-            chkBoxCopyImages.TabIndex = 9;
-            chkBoxCopyImages.Text = "Images";
-            chkBoxCopyImages.UseVisualStyleBackColor = true;
-            chkBoxCopyImages.CheckedChanged += chkBoxCopyImages_CheckedChanged;
+            checkBoxCopyImages.AutoSize = true;
+            checkBoxCopyImages.Enabled = false;
+            checkBoxCopyImages.Location = new Point(117, 159);
+            checkBoxCopyImages.Name = "checkBoxCopyImages";
+            checkBoxCopyImages.Size = new Size(64, 19);
+            checkBoxCopyImages.TabIndex = 9;
+            checkBoxCopyImages.Text = "Images";
+            checkBoxCopyImages.UseVisualStyleBackColor = true;
+            checkBoxCopyImages.CheckedChanged += checkBoxCopyImages_CheckedChanged;
             // 
-            // chkBoxCopyVideos
+            // checkBoxCopyVideos
             // 
-            chkBoxCopyVideos.AutoSize = true;
-            chkBoxCopyVideos.Enabled = false;
-            chkBoxCopyVideos.Location = new Point(117, 193);
-            chkBoxCopyVideos.Name = "chkBoxCopyVideos";
-            chkBoxCopyVideos.Size = new Size(61, 19);
-            chkBoxCopyVideos.TabIndex = 9;
-            chkBoxCopyVideos.Text = "Videos";
-            chkBoxCopyVideos.UseVisualStyleBackColor = true;
-            chkBoxCopyVideos.CheckedChanged += chkBoxCopyVideos_CheckedChanged;
+            checkBoxCopyVideos.AutoSize = true;
+            checkBoxCopyVideos.Enabled = false;
+            checkBoxCopyVideos.Location = new Point(117, 193);
+            checkBoxCopyVideos.Name = "checkBoxCopyVideos";
+            checkBoxCopyVideos.Size = new Size(61, 19);
+            checkBoxCopyVideos.TabIndex = 9;
+            checkBoxCopyVideos.Text = "Videos";
+            checkBoxCopyVideos.UseVisualStyleBackColor = true;
+            checkBoxCopyVideos.CheckedChanged += checkBoxCopyVideos_CheckedChanged;
             // 
-            // chkBoxCopyDocuments
+            // checkBoxCopyDocs
             // 
-            chkBoxCopyDocuments.AutoSize = true;
-            chkBoxCopyDocuments.Enabled = false;
-            chkBoxCopyDocuments.Location = new Point(117, 225);
-            chkBoxCopyDocuments.Name = "chkBoxCopyDocuments";
-            chkBoxCopyDocuments.Size = new Size(87, 19);
-            chkBoxCopyDocuments.TabIndex = 9;
-            chkBoxCopyDocuments.Text = "Documents";
-            chkBoxCopyDocuments.UseVisualStyleBackColor = true;
+            checkBoxCopyDocs.AutoSize = true;
+            checkBoxCopyDocs.Enabled = false;
+            checkBoxCopyDocs.Location = new Point(117, 225);
+            checkBoxCopyDocs.Name = "checkBoxCopyDocs";
+            checkBoxCopyDocs.Size = new Size(87, 19);
+            checkBoxCopyDocs.TabIndex = 9;
+            checkBoxCopyDocs.Text = "Documents";
+            checkBoxCopyDocs.UseVisualStyleBackColor = true;
             // 
             // comboBoxCopySubFolder
             // 
@@ -926,7 +926,6 @@
             btnMove.TabIndex = 7;
             btnMove.Text = "Move";
             btnMove.UseVisualStyleBackColor = false;
-            btnMove.Click += btnMove_Click;
             // 
             // btnCopyStop
             // 
@@ -952,7 +951,6 @@
             btnCopy.TabIndex = 7;
             btnCopy.Text = "Copy";
             btnCopy.UseVisualStyleBackColor = false;
-            btnCopy.Click += btnCopy_Click;
             // 
             // btnCopyBrowse
             // 
@@ -997,31 +995,31 @@
             // 
             // statusStrip1
             // 
-            statusStrip1.Items.AddRange(new ToolStripItem[] { progressBarScan, toolStripLabelProgress, toolStripProgressBarPerFile });
+            statusStrip1.Items.AddRange(new ToolStripItem[] { progressBarGlobal, labelProgress, progressBarPerFile });
             statusStrip1.Location = new Point(0, 559);
             statusStrip1.Name = "statusStrip1";
             statusStrip1.Size = new Size(1204, 22);
             statusStrip1.TabIndex = 1;
             statusStrip1.Text = "-";
             // 
-            // progressBarScan
+            // progressBarGlobal
             // 
-            progressBarScan.Alignment = ToolStripItemAlignment.Right;
-            progressBarScan.Name = "progressBarScan";
-            progressBarScan.Size = new Size(200, 16);
+            progressBarGlobal.Alignment = ToolStripItemAlignment.Right;
+            progressBarGlobal.Name = "progressBarGlobal";
+            progressBarGlobal.Size = new Size(200, 16);
             // 
-            // toolStripLabelProgress
+            // labelProgress
             // 
-            toolStripLabelProgress.ForeColor = SystemColors.ControlText;
-            toolStripLabelProgress.Name = "toolStripLabelProgress";
-            toolStripLabelProgress.Size = new Size(12, 17);
-            toolStripLabelProgress.Text = "-";
+            labelProgress.ForeColor = SystemColors.ControlText;
+            labelProgress.Name = "labelProgress";
+            labelProgress.Size = new Size(12, 17);
+            labelProgress.Text = "-";
             // 
-            // toolStripProgressBarPerFile
+            // progressBarPerFile
             // 
-            toolStripProgressBarPerFile.Name = "toolStripProgressBarPerFile";
-            toolStripProgressBarPerFile.Size = new Size(100, 16);
-            toolStripProgressBarPerFile.Visible = false;
+            progressBarPerFile.Name = "progressBarPerFile";
+            progressBarPerFile.Size = new Size(100, 16);
+            progressBarPerFile.Visible = false;
             // 
             // folderBrowserScan
             // 
@@ -1106,8 +1104,8 @@
         private TextBox txtKeyIncl;
         private TextBox txtKeyExcl;
         private Button btnScan;
-        private ToolStripProgressBar progressBarScan;
-        private ToolStripStatusLabel toolStripLabelProgress;
+        private ToolStripProgressBar progressBarGlobal;
+        private ToolStripStatusLabel labelProgress;
         private FolderBrowserDialog folderBrowserScan;
         private Panel panel2;
         private System.ComponentModel.BackgroundWorker bgWorkerScan;
@@ -1129,19 +1127,19 @@
         private Label label3;
         private System.ComponentModel.BackgroundWorker bgWorkerCopy;
         private TabPage tabPage5;
-        private CheckBox chkBoxCopyImages;
-        private CheckBox chkBoxCopyDocuments;
-        private CheckBox chkBoxCopyVideos;
+        private CheckBox checkBoxCopyImages;
+        private CheckBox checkBoxCopyDocs;
+        private CheckBox checkBoxCopyVideos;
         private Label label4;
-        private RadioButton rbtnVideoNonOri;
-        private RadioButton rbtnVideoOri;
-        private RadioButton rbtnVideoAll;
+        private RadioButton radioProcessVideoNonOri;
+        private RadioButton radioProcessVideoOri;
+        private RadioButton radioProcessVideoAll;
         private GroupBox gBoxCopyVideos;
         private GroupBox gBoxCopyImages;
-        private RadioButton rbtnImageAll;
-        private RadioButton rbtnImageOri;
-        private RadioButton rbtnImageNonOri;
-        private ToolStripProgressBar toolStripProgressBarPerFile;
+        private RadioButton radioProcessImageAll;
+        private RadioButton radioProcessImageOri;
+        private RadioButton radioProcessImageNonOri;
+        private ToolStripProgressBar progressBarPerFile;
         private Splitter splitter1;
         private Label lblCopyPathFinalPreview;
         private Label label5;
@@ -1156,14 +1154,14 @@
         private RadioButton radioOri;
         private RadioButton radioNonOri;
         private RadioButton radioAll;
-        private Button btnProcess;
+        private Button buttonProcess;
         private Panel panel4;
         private RadioButton radioButtonProcessCopy;
         private RadioButton radioButtonProcessMove;
         private CheckBox checkBoxMoveDeleteFiles;
         private Label label8;
         private DataGridViewTextBoxColumn no;
-        private DataGridViewTextBoxColumn directory;
+        private DataGridViewTextBoxColumn dirPath;
         private DataGridViewTextBoxColumn name;
         private DataGridViewTextBoxColumn type;
         private DataGridViewTextBoxColumn size;

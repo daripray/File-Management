@@ -136,34 +136,34 @@ namespace File_Management_v2.Helper
 
                 var fi = new FileInfo(filePath);
                 if (fi.Length == 0)
-                    return Status.Scan.Empty;
+                    return FileStatus.Scan.Empty;
 
                 // Cek file gambar (load Image)
                 if (imageExts.Contains(ext))
                 {
                     using var img = System.Drawing.Image.FromFile(filePath);
-                    return Status.Scan.Ok;
+                    return FileStatus.Scan.Ok;
                 }
 
                 // Cek file video (cek apakah file bisa dibuka saja)
                 if (videoExts.Contains(ext))
                 {
                     using var fs = File.OpenRead(filePath);
-                    return Status.Scan.Ok;
+                    return FileStatus.Scan.Ok;
                 }
 
                 // Cek file dokumen (cek apakah file bisa dibaca atau tidak corrupt)
                 if (documentExts.Contains(ext))
                 {
                     using var fs = File.OpenRead(filePath);
-                    return Status.Scan.Ok;
+                    return FileStatus.Scan.Ok;
                 }
 
-                return Status.Scan.Ok; // default kalau tidak termasuk kategori khusus
+                return FileStatus.Scan.Ok; // default kalau tidak termasuk kategori khusus
             }
             catch
             {
-                return Status.Scan.Corrupt;
+                return FileStatus.Scan.Corrupt;
             }
         }
 
