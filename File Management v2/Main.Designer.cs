@@ -32,6 +32,7 @@
             splitter1 = new Splitter();
             groupBox1 = new GroupBox();
             dgvScan = new DataGridView();
+            checkBox = new DataGridViewCheckBoxColumn();
             no = new DataGridViewTextBoxColumn();
             dirPath = new DataGridViewTextBoxColumn();
             name = new DataGridViewTextBoxColumn();
@@ -174,14 +175,25 @@
             dgvScan.AllowUserToDeleteRows = false;
             dgvScan.AllowUserToOrderColumns = true;
             dgvScan.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dgvScan.Columns.AddRange(new DataGridViewColumn[] { no, dirPath, name, type, size, originalStatus, dateTaken, mediaCreated, dateCreated, fileStatus, copyStatus });
+            dgvScan.Columns.AddRange(new DataGridViewColumn[] { checkBox, no, dirPath, name, type, size, originalStatus, dateTaken, mediaCreated, dateCreated, fileStatus, copyStatus });
             dgvScan.Dock = DockStyle.Fill;
             dgvScan.Location = new Point(3, 19);
             dgvScan.Name = "dgvScan";
             dgvScan.ReadOnly = true;
             dgvScan.Size = new Size(1166, 226);
             dgvScan.TabIndex = 3;
+            dgvScan.CellClick += dgvScan_CellClick;
+            dgvScan.ColumnHeaderMouseClick += dgvScan_ColumnHeaderMouseClick;
             dgvScan.SelectionChanged += dgvScan_SelectionChanged;
+            // 
+            // checkBox
+            // 
+            checkBox.AutoSizeMode = DataGridViewAutoSizeColumnMode.ColumnHeader;
+            checkBox.HeaderText = "Pilih";
+            checkBox.Name = "checkBox";
+            checkBox.ReadOnly = true;
+            checkBox.Resizable = DataGridViewTriState.False;
+            checkBox.Width = 36;
             // 
             // no
             // 
@@ -514,7 +526,7 @@
             txtKeyIncl.Name = "txtKeyIncl";
             txtKeyIncl.Size = new Size(433, 23);
             txtKeyIncl.TabIndex = 1;
-            txtKeyIncl.Text = "IMG, DSC, PXL, JPEG, PHOTO, SAMSUNG, ANDROID, DCIM, CAM, CAMERA, DCM, PIC, MV, IMG_E";
+            txtKeyIncl.Text = "IMG_, VID_, MOV_, DSC, PXL, JPEG, PHOTO, SAMSUNG, ANDROID, DCIM, CAM, CAMERA, DCM, PIC, MV, IMG_E";
             // 
             // chkDocument
             // 
@@ -1160,6 +1172,7 @@
         private RadioButton radioButtonProcessMove;
         private CheckBox checkBoxMoveDeleteFiles;
         private Label label8;
+        private DataGridViewCheckBoxColumn checkBox;
         private DataGridViewTextBoxColumn no;
         private DataGridViewTextBoxColumn dirPath;
         private DataGridViewTextBoxColumn name;

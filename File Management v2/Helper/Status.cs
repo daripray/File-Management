@@ -2,7 +2,7 @@
 
 namespace File_Management_v2.Helper
 {
-    internal static class FileStatus
+    internal static class Status
     {
         internal static class Action
         {
@@ -24,6 +24,7 @@ namespace File_Management_v2.Helper
             public const string Copying = "Copying";
             public const string Moving = "Moving";
             public const string Stopping = "Stopping";
+            public const string Deleting = "Deleting";
             public const string Error = "Error";
         }
         internal static class Scan
@@ -56,6 +57,7 @@ namespace File_Management_v2.Helper
             public const string Exist = "Exist";
             public const string Copied = "Copied";
             public const string Moved = "Moved";
+            public const string Deleted = "Deleted";
             public const string Renamed = "Renamed";
             public const string Skipped = "Skipped";
         }

@@ -12,7 +12,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using System.Drawing.Imaging;
-using static File_Management_v2.Helper.FileStatus;
+using Status = File_Management_v2.Helper.Status;
 using static Microsoft.WindowsAPICodePack.Shell.PropertySystem.SystemProperties.System;
 using Image = System.Drawing.Image;
 
@@ -54,7 +54,7 @@ namespace File_Management_v2
         public Main()
         {
             InitializeComponent();
-            currentState = currentAction = FileStatus.Action.None; // Inisialisasi status awal
+            currentState = currentAction = Helper.Status.Action.None; // Inisialisasi status awal
             totalScannedDatas = totalDataToCopy = 0; // Inisialisasi total data yang akan di-scan/copy
             _prefixDict.Clear();
 
@@ -128,8 +128,8 @@ namespace File_Management_v2
         private void btnScan_Click(object sender, EventArgs e)
         {
             processStartTime = DateTime.Now;
-            currentAction = FileStatus.Action.Scan;
-            currentState = FileStatus.Process.Running;
+            currentAction = Helper.Status.Action.Scan;
+            currentState = Helper.Status.Process.Running;
             addLog(" ----------------------------------- ");
             addLog(); // akan log: "Proses SCAN dimulai."
 
@@ -187,9 +187,9 @@ namespace File_Management_v2
                     if (bgWorkerScan.CancellationPending)
                     {
                         e.Cancel = true;
-                        currentState = FileStatus.Process.Canceled;
+                        currentState = Helper.Status.Process.Canceled;
                         addLog(); // akan log: "Proses dihentikan oleh pengguna."
-                        currentAction = FileStatus.Action.None; // Reset currentAction ke None setelah dibatalkan
+                        currentAction = Helper.Status.Action.None; // Reset currentAction ke None setelah dibatalkan
                         return;
                     }
 
@@ -238,7 +238,7 @@ namespace File_Management_v2
             {
                 MessageBox.Show("Error in DoWork: " + ex.Message);
                 e.Cancel = true;
-                currentState = FileStatus.Process.Failed;
+                currentState = Helper.Status.Process.Failed;
                 addLog($"[ERROR] {ex.Message}");
                 return;
             }
@@ -252,6 +252,7 @@ namespace File_Management_v2
                 return;
 
             dgvScan.Rows.Add(
+                false,
                 dgvScan.Rows.Count + 1,                                      // no
                 result.Directory,                                             // path
                 result.FileName,                                             // name
@@ -281,13 +282,13 @@ namespace File_Management_v2
                 if (e.Cancelled)
                 {
                     MessageBox.Show($"Proses {currentAction} dibatalkan oleh pengguna.", "Dibatalkan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    currentState = FileStatus.Process.Canceled;
+                    currentState = Helper.Status.Process.Canceled;
                     return;
                 }
                 else if (e.Error != null)
                 {
                     MessageBox.Show($"Kesalahan saat {currentAction}: " + e.Error.Message);
-                    currentState = FileStatus.Process.Failed;
+                    currentState = Helper.Status.Process.Failed;
                 }
                 else
                 {
@@ -299,11 +300,11 @@ namespace File_Management_v2
                     addLog($"Finished scanning {totalScannedDatas} files.");
                     addLog($"Matched {dgvScan.Rows.Count} files displayed.");
                     addLog($"Scanning duration: {duration.TotalSeconds:F2} seconds.");
-                    currentState = FileStatus.Process.Completed;
+                    currentState = Helper.Status.Process.Completed;
                 }
             addLog(); // akan log sesuai status
             addLog(" ----------------------------------- ");
-            currentAction = FileStatus.Action.None; // Reset currentAction ke None setelah selesai
+            currentAction = Helper.Status.Action.None; // Reset currentAction ke None setelah selesai
         }
         private void btnCancelScan_Click(object sender, EventArgs e)
         {
@@ -311,11 +312,11 @@ namespace File_Management_v2
             {
                 bgWorkerScan.CancelAsync();
                 btnCancelScan.Enabled = false;
-                currentState = FileStatus.Process.Stopping; // Set currentState ke Stopping
+                currentState = Helper.Status.Process.Stopping; // Set currentState ke Stopping
 
                 addLog(); // akan log: "Proses dihentikan oleh pengguna."
                 addLog(" ----------------------------------- ");
-                currentAction = FileStatus.Action.None; // Set currentAction ke Stop
+                currentAction = Helper.Status.Action.None; // Set currentAction ke Stop
             }
         }
         #endregion SCAN FILES
@@ -327,8 +328,8 @@ namespace File_Management_v2
         {
             processStartTime = DateTime.Now;
             // Set currentAction dan currentState untuk proses Copy / Move
-            currentAction = radioButtonProcessCopy.Checked ? FileStatus.Action.Copy : FileStatus.Action.Move;
-            currentState = FileStatus.Process.Running;
+            currentAction = radioButtonProcessCopy.Checked ? Helper.Status.Action.Copy : Helper.Status.Action.Move;
+            currentState = Helper.Status.Process.Running;
             addLog(" ----------------------------------- ");
             addLog(); // akan log: "Proses COPY dimulai."
 
@@ -336,8 +337,8 @@ namespace File_Management_v2
             var param = new Parameters.Process();
             param.BaseTargetPath = txtCopyPath.Text.Trim();
             param.SubfolderFormat = comboBoxCopySubFolder.SelectedItem?.ToString() ?? "";
-            param.DeleteAfterMove = checkBoxMoveDeleteFile.Checked; // Ambil nilai dari checkbox
-            param.DeleteAfterMove = checkBoxMoveDeleteFile.Checked;
+            //param.DeleteAfterMove = checkBoxMoveDeleteFile.Checked; // Ambil nilai dari checkbox
+            param.DeleteAfterMove = checkBoxMoveDeleteFiles.Checked;
             param.ProcessImages = checkBoxCopyImages.Checked;
             param.ProcessVideos = checkBoxCopyVideos.Checked;
             param.ProcessDocs = checkBoxCopyDocs.Checked;
@@ -368,15 +369,19 @@ namespace File_Management_v2
             bool isMove = radioButtonProcessMove.Checked;
             bool deleteAfterMove = param.DeleteAfterMove;
 
-            
+
             var indexer = new DataGridColumnIndexer(dgvScan);
             int total = dgvScan.Rows.Count;
 
             for (int i = 0; i < total; i++)
             {
+                string stateLabel = isMove ? Helper.Status.Process.Moving : Helper.Status.Process.Copying;
+                string stateResultLabel = isMove ? Helper.Status.Result.Moved : Helper.Status.Result.Copied;
                 if (bgWorkerCopy.CancellationPending) break;
 
                 var _currRow = dgvScan.Rows[i];
+
+                bool _currChecked = _currRow.Cells[indexer["check"]].Value is bool value && value;
 
                 string _currExt = Path.GetExtension(_currRow.Cells[indexer["name"]].Value.ToString()).TrimStart('.').ToUpper();
 
@@ -391,7 +396,7 @@ namespace File_Management_v2
 
                 // Cek original status berdasarkan metadata
                 bool _currOriginalStatus = !string.IsNullOrEmpty(_currDateTaken) || !string.IsNullOrEmpty(_currMediaCreated);
-                bool _currFileStatusOK = _currFileStatus.Equals(FileStatus.Scan.Ok, StringComparison.OrdinalIgnoreCase);
+                bool _currFileStatusOK = _currFileStatus.Equals(Helper.Status.Scan.Ok, StringComparison.OrdinalIgnoreCase);
 
                 bool _currIsImage = globImageExts?.Contains(_currExt) == true;
                 bool _currIsVideo = globVideoExts?.Contains(_currExt) == true;
@@ -442,14 +447,14 @@ namespace File_Management_v2
                 // ❌ Jika tidak lolos filter
                 if (!_currShouldProcess)
                 {
-                    _currRow.Cells[indexer["copyStatus"]].Value += $"{FileStatus.Process.Skipped}";
+                    _currRow.Cells[indexer["copyStatus"]].Value += $"{Helper.Status.Process.Skipped}";
                     continue;
                 }
 
                 // ⛔ Skip file bukan "OK"
-                if (_currRow.Cells[indexer["fileStatus"]].Value.ToString() != FileStatus.Scan.Ok)
+                if (_currRow.Cells[indexer["fileStatus"]].Value.ToString() != Helper.Status.Scan.Ok)
                 {
-                    _currRow.Cells[indexer["copyStatus"]].Value += $"{FileStatus.Result.Skipped}";
+                    _currRow.Cells[indexer["copyStatus"]].Value += $"{Helper.Status.Result.Skipped}";
                     skipCount++;
                     continue;
                 }
@@ -457,7 +462,7 @@ namespace File_Management_v2
                 DateTime myDate = GetTargetDate(_currRow);
                 string destinationDir = BuildFinalPath(baseTargetPath, myDate, subfolderFormat);
 
-                if(!Directory.Exists(destinationDir)) Directory.CreateDirectory(destinationDir);
+                if (!Directory.Exists(destinationDir)) Directory.CreateDirectory(destinationDir);
 
                 string _currSourceFilePath = Path.Combine(_currDirPath, _currFilename);
 
@@ -465,62 +470,105 @@ namespace File_Management_v2
 
                 try
                 {
+                    if (!_currChecked)
+                    {
+                        _currRow.Cells[indexer["copyStatus"]].Value += $"{Helper.Status.Result.Skipped}";
+                        skipCount++;
+                        //continue;
+                    }
+                    else
                     if (isFileDuplicateSize(_currSourceFilePath, _currDestFilePath))
                     {
-                        _currRow.Cells[indexer["copyStatus"]].Value += $"{FileStatus.Result.Exist}";
-                        skipCount++;
-                        continue;
+                        _currRow.Cells[indexer["copyStatus"]].Value += $"{Helper.Status.Result.Exist} ";
+                        if (param.DeleteAfterMove)
+                        {
+                            File.Delete(_currSourceFilePath); // Hapus file sumber jika deleteAfterMove diaktifkan
+                            _currRow.Cells[indexer["copyStatus"]].Value += $"{Helper.Status.Result.Deleted} ";
+                            if (File.Exists(_currSourceFilePath))
+                            {
+                                _currRow.Cells[indexer["copyStatus"]].Value += Helper.Status.Process.Failed + " (Failed to delete source file)";
+                                failCount++;
+                                continue;
+                            }
+                            else
+                            {
+                                _currRow.Cells[indexer["copyStatus"]].Value += $"{stateResultLabel} ";
+                                successCount++;
+                            }
+                        }
+                        //continue;
                     }
-
-                    if (isFileDuplicateName(_currSourceFilePath, _currDestFilePath))
+                    else if (isFileDuplicateName(_currSourceFilePath, _currDestFilePath))
                     {
                         _currDestFilePath = GetUniqueFileName(destinationDir, Path.GetFileName(_currSourceFilePath));
-                        _currRow.Cells[indexer["copyStatus"]].Value += $"{FileStatus.Result.Renamed} ";
-                    }
-
-                    if (currentAction == FileStatus.Action.Move)
-                    {
-                        File.Move(_currSourceFilePath, _currDestFilePath);
-                        if (File.Exists(_currDestFilePath))
+                        _currRow.Cells[indexer["copyStatus"]].Value += $"{Helper.Status.Result.Renamed} ";
+                        if (param.DeleteAfterMove)
                         {
-                            _currRow.Cells[indexer["copyStatus"]].Value += FileStatus.Result.Moved;
-                            if (param.DeleteAfterMove)
+                            File.Delete(_currSourceFilePath); // Hapus file sumber jika deleteAfterMove diaktifkan
+                            _currRow.Cells[indexer["copyStatus"]].Value += $"{Helper.Status.Result.Deleted} ";
+                            if (File.Exists(_currSourceFilePath))
                             {
-                                File.Delete(_currSourceFilePath); // Hapus file sumber jika deleteAfterMove diaktifkan
-                                if(File.Exists(_currSourceFilePath))
-                                {
-                                    _currRow.Cells[indexer["copyStatus"]].Value += FileStatus.Process.Failed + " (Failed to delete source file)";
-                                    failCount++;
-                                }
-                                else
-                                {
-                                    _currRow.Cells[indexer["copyStatus"]].Value += FileStatus.Result.Success;
-                                }   
+                                _currRow.Cells[indexer["copyStatus"]].Value += Helper.Status.Process.Failed + " (Failed to delete source file)";
+                                failCount++;
+                                continue;
+                            }
+                            else
+                            {
+                                _currRow.Cells[indexer["copyStatus"]].Value += $"{stateResultLabel} ";
+                                successCount++;
                             }
                         }
                     }
                     else
                     {
-                        File.Copy(_currSourceFilePath, _currDestFilePath);
-                        _currRow.Cells[indexer["copyStatus"]].Value += FileStatus.Result.Copied;
-                        if (!File.Exists(_currDestFilePath))
+                        if (currentAction == Helper.Status.Action.Move)
                         {
-                            _currRow.Cells[indexer["copyStatus"]].Value += $"{FileStatus.Process.Error} (Failed to copy file)";
-                            failCount++;
-                            continue;
+                            File.Move(_currSourceFilePath, _currDestFilePath);
+                            if (File.Exists(_currDestFilePath))
+                            {
+                                _currRow.Cells[indexer["copyStatus"]].Value += $"{Helper.Status.Result.Moved} ";
+                                if (param.DeleteAfterMove)
+                                {
+                                    File.Delete(_currSourceFilePath); // Hapus file sumber jika deleteAfterMove diaktifkan
+                                    if (File.Exists(_currSourceFilePath))
+                                    {
+                                        _currRow.Cells[indexer["copyStatus"]].Value += $"{Status.Result.Failed} (Failed to delete source file) ";
+                                        failCount++;
+                                        continue;
+                                    }
+                                    else
+                                    {
+                                        _currRow.Cells[indexer["copyStatus"]].Value += $"{Status.Result.Deleted} ";
+                                        successCount++;
+                                    }
+                                }
+                            }
+                            _currRow.Cells[indexer["copyStatus"]].Value += $"{Status.Result.Success} ";
                         }
-                        _currRow.Cells[indexer["copyStatus"]].Value += FileStatus.Result.Success;
+                        else
+                        {
+                            File.Copy(_currSourceFilePath, _currDestFilePath);
+                            _currRow.Cells[indexer["copyStatus"]].Value += $"{Status.Result.Copied} ";
+                            if (!File.Exists(_currDestFilePath))
+                            {
+                                _currRow.Cells[indexer["copyStatus"]].Value += $"{Helper.Status.Process.Failed} (Failed to copy file) ";
+                                failCount++;
+                                continue;
+                            }
+                            _currRow.Cells[indexer["copyStatus"]].Value += $"{Status.Result.Success} ";
+                        }
+                        successCount++;
                     }
-
-                    successCount++;
                 }
                 catch (Exception ex)
                 {
-                    _currRow.Cells[indexer["copyStatus"]].Value += $"{FileStatus.Process.Error}: {ex.Message}";
+                    _currRow.Cells[indexer["copyStatus"]].Value += $"{Helper.Status.Process.Error}: {ex.Message}";
                     failCount++;
                 }
 
-                addLog($"[{i + 1}/{total}] {_currRow.Cells[indexer["name"]].Value} => {_currRow.Cells[indexer["copyStatus"]].Value.ToString()}");
+                if (i % 100 == 0) addLog($"{stateLabel} file ke-{i}...");
+
+                //addLog($"[{i + 1}/{total}] {_currRow.Cells[indexer["name"]].Value} => {_currRow.Cells[indexer["copyStatus"]].Value.ToString()}");
 
                 // 🔄 Update UI progress
                 int progress = (int)((i / (double)total) * 100);
@@ -565,14 +613,14 @@ namespace File_Management_v2
 
             if (e.Cancelled)
             {
-                currentState = FileStatus.Process.Canceled;
+                currentState = Helper.Status.Process.Canceled;
                 MessageBox.Show($"Process {currentAction} {currentState} by user.", "Cancelled", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
             else if (e.Error != null)
             {
                 MessageBox.Show($"Kesalahan saat {currentAction}: " + e.Error.Message);
-                currentState = FileStatus.Process.Failed;
+                currentState = Helper.Status.Process.Failed;
             }
             else
             {
@@ -582,10 +630,11 @@ namespace File_Management_v2
                 labelProgress.GetCurrentParent()?.Refresh();
 
                 labelProgress.Text = $"{currentState}: {totalDataToCopy}/{totalDataToCopy} data completed.";
-                currentState = FileStatus.Process.Completed; // Set state ke Completed
+                currentState = Helper.Status.Process.Completed; // Set state ke Completed
             }
 
             TimeSpan duration = processEndTime - processStartTime;
+            string stateLabel = currentAction == Status.Action.Move ? Helper.Status.Process.Moving : Helper.Status.Process.Copying;
 
             labelProgress.Text = $"{currentAction} completed." +
                 $" Total: {data.Total}" +
@@ -601,15 +650,15 @@ namespace File_Management_v2
                 $"Hasil {currentAction}");
 
             addLog($"Finished {currentState} {data.Total} files.");
+            addLog($"{stateLabel} {data.Total} duration: {duration.TotalSeconds:F2} seconds.");
             addLog($"Success: {data.SuccessCount}");
             addLog($"Skip: {data.SkipCount}");
             addLog($"Fail: {data.FailCount}");
-            addLog($"{data.Total} duration: {duration.TotalSeconds:F2} seconds.");
 
-            currentState = FileStatus.Process.Completed;
+            currentState = Helper.Status.Process.Completed;
             addLog(); // akan log sesuai status
             addLog(" ----------------------------------- ");
-            currentAction = FileStatus.Action.None; // Reset currentAction ke None setelah selesai
+            currentAction = Helper.Status.Action.None; // Reset currentAction ke None setelah selesai
             //currentState = FileStatus.Process.None; // Reset currentState ke None setelah selesai
         }
         private void btnCopyStop_Click(object sender, EventArgs e)
@@ -618,11 +667,11 @@ namespace File_Management_v2
             {
                 bgWorkerCopy.CancelAsync();
                 btnCopyStop.Enabled = false;
-                currentState = FileStatus.Process.Canceled; // Set currentState ke Stopping
+                currentState = Helper.Status.Process.Canceled; // Set currentState ke Stopping
 
                 addLog(); // akan log: "Proses dihentikan oleh pengguna."
                 addLog(" ----------------------------------- ");
-                currentAction = FileStatus.Action.None; // Set currentAction ke Stop
+                currentAction = Helper.Status.Action.None; // Set currentAction ke Stop
             }
         }
 
@@ -635,7 +684,7 @@ namespace File_Management_v2
 
             while (File.Exists(Path.Combine(destFolder, newFileName)))
             {
-                newFileName = $"{fileNameWithoutExt}_{counter}{ext}";
+                newFileName = $"{fileNameWithoutExt}({counter}){ext}";
                 counter++;
             }
 
@@ -693,7 +742,6 @@ namespace File_Management_v2
             }
             return false;
         }
-
         private bool isFileDuplicateName(string firstFile, string secondFile)
         {
             if (File.Exists(secondFile))
@@ -714,28 +762,28 @@ namespace File_Management_v2
             {
                 switch (currentState)
                 {
-                    case FileStatus.Process.Running:
-                    case FileStatus.Process.Completed:
-                        message = $"Proses {currentAction.ToUpper()} {(currentState == FileStatus.Process.Running ? "dimulai" : "selesai")}.";
+                    case Helper.Status.Process.Running:
+                    case Helper.Status.Process.Completed:
+                        message = $"Proses {currentAction.ToUpper()} {(currentState == Helper.Status.Process.Running ? "dimulai" : "selesai")}.";
                         break;
 
-                    case FileStatus.Process.Scanning:
+                    case Helper.Status.Process.Scanning:
                         message = "Memindai file...";
                         break;
 
-                    case FileStatus.Process.Copying:
+                    case Helper.Status.Process.Copying:
                         message = "Menyalin file...";
                         break;
 
-                    case FileStatus.Process.Moving:
+                    case Helper.Status.Process.Moving:
                         message = "Memindahkan file...";
                         break;
 
-                    case FileStatus.Process.Canceled:
+                    case Helper.Status.Process.Canceled:
                         message = "Proses dihentikan oleh pengguna.";
                         break;
 
-                    case FileStatus.Process.Error:
+                    case Helper.Status.Process.Error:
                         message = "Terjadi kesalahan selama proses.";
                         break;
 
@@ -794,7 +842,7 @@ namespace File_Management_v2
         {
             try
             {
-                if (currentAction != FileStatus.Action.None) return;
+                if (currentAction != Helper.Status.Action.None) return;
                 // Hapus gambar lama
                 picBox.Image?.Dispose();
                 if (dgvScan.CurrentCell == null || dgvScan.CurrentCell.RowIndex == dgvScan.NewRowIndex)
@@ -908,5 +956,52 @@ namespace File_Management_v2
             activateBtnProcessData();
         }
         #endregion PARAMETER COPY
+
+        private void dgvScan_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            // Pastikan kolom "check" yang diklik
+            if (e.ColumnIndex == indexer["check"])
+            {
+                // Dapatkan status awal dari baris pertama (asumsi semua akan mengikuti)
+                bool newCheckState = true;
+
+                // Cek apakah semua sudah tercentang, jika iya, maka kita akan uncheck
+                bool allChecked = dgvScan.Rows.Cast<DataGridViewRow>()
+                    .All(row => row.Cells[indexer["check"]].Value is bool value && value);
+
+                if (allChecked)
+                {
+                    newCheckState = false; // Jika semua sudah checked, maka toggle ke false
+                }
+
+                // Iterasi semua baris dan ubah nilai "check"
+                foreach (DataGridViewRow row in dgvScan.Rows)
+                {
+                    if (row.Cells[indexer["check"]].Value != null)
+                    {
+                        row.Cells[indexer["check"]].Value = newCheckState; // Toggle berdasarkan kondisi awal
+                    }
+                }
+            }
+        }
+
+        private void dgvScan_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            // Pastikan klik terjadi di dalam batas indeks yang benar
+            if (e.RowIndex >= 0 && e.RowIndex < dgvScan.Rows.Count && e.ColumnIndex == indexer["check"])
+            {
+                DataGridViewCell cell = dgvScan.Rows[e.RowIndex].Cells[e.ColumnIndex];
+
+                // Toggle nilai antara true dan false
+                if (cell.Value is bool currentValue)
+                {
+                    cell.Value = !currentValue; // Ubah nilai menjadi kebalikan dari sebelumnya
+                }
+                else
+                {
+                    cell.Value = true; // Jika awalnya kosong atau null, set ke true
+                }
+            }
+        }
     }
 }
