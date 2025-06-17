@@ -1,13 +1,17 @@
-﻿using Shell32;
+﻿using MetadataExtractor;
+using Microsoft.WindowsAPICodePack.Shell;
+using Microsoft.WindowsAPICodePack.Shell.PropertySystem;
+using Shell32;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.IO;
-using Microsoft.WindowsAPICodePack.Shell;
+
 
 namespace File_Management_v2.Helper
 {
@@ -74,6 +78,85 @@ namespace File_Management_v2.Helper
             catch
             {
                 // Abaikan error
+            }
+
+            return metadata;
+        }
+
+        public static Dictionary<string, string> GetAllProperties(string filePath)
+        {
+            var metadata = new Dictionary<string, string>();
+
+            try
+            {
+                using (ShellObject shell = ShellObject.FromParsingName(filePath))
+                {
+                    // Ambil semua properti metadata
+                    var props = shell.Properties.DefaultPropertyCollection;
+
+                    foreach (IShellProperty prop in shell.Properties.DefaultPropertyCollection)
+                    {
+                        try
+                        {
+                            string name = prop.CanonicalName;
+                            if (name == "System.SharedWith")
+                                continue;
+                            string value = prop.ValueAsObject?.ToString();
+
+                            if (!string.IsNullOrWhiteSpace(name) && !string.IsNullOrWhiteSpace(value))
+                                metadata[name] = value;
+                        }
+                        catch (Exception innerEx)
+                        {
+                            // Skip property yang error tanpa menghentikan loop
+                            metadata[$"Error reading {prop?.CanonicalName}"] = innerEx.Message;
+                        }
+                    }
+
+
+                    // Tambah properti sistem file
+                    metadata["Date created"] = File.GetCreationTime(filePath).ToString("yyyy-MM-dd HH:mm:ss");
+                    metadata["Date modified"] = File.GetLastWriteTime(filePath).ToString("yyyy-MM-dd HH:mm:ss");
+                    metadata["File location"] = Path.GetDirectoryName(filePath);
+                }
+            }
+            catch (Exception ex)
+            {
+                metadata["Error"] = ex.Message;
+            }
+
+            return metadata;
+        }
+
+        public static Dictionary<string, string> GetAllMetadata(string filePath)
+        {
+            var metadata = new Dictionary<string, string>();
+
+            try
+            {
+                var directories = ImageMetadataReader.ReadMetadata(filePath);
+
+                foreach (var directory in directories)
+                {
+                    foreach (var tag in directory.Tags)
+                    {
+                        string key = $"{directory.Name}.{tag.Name}".Replace(" ", "");
+                        string value = tag.Description?.Trim();
+
+                        if (!string.IsNullOrWhiteSpace(key) && !string.IsNullOrWhiteSpace(value))
+                            metadata[key] = value;
+                    }
+
+                    // Jika ada error dalam directory, bisa juga ditambahkan
+                    foreach (var error in directory.Errors)
+                    {
+                        metadata[$"{directory.Name}.Error"] = error;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                metadata["ReadMetadata.Error"] = ex.Message;
             }
 
             return metadata;

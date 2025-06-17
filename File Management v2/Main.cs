@@ -1,9 +1,13 @@
 ﻿using File_Management_v2.Helper;
+using MetadataExtractor;
 using Microsoft.VisualBasic;
+using Microsoft.WindowsAPICodePack.Shell.Interop;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
@@ -11,10 +15,9 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
-using System.Drawing.Imaging;
-using Status = File_Management_v2.Helper.Status;
 using static Microsoft.WindowsAPICodePack.Shell.PropertySystem.SystemProperties.System;
 using Image = System.Drawing.Image;
+using Status = File_Management_v2.Helper.Status;
 
 
 namespace File_Management_v2
@@ -24,7 +27,7 @@ namespace File_Management_v2
         private List<string> globImageExts = new List<string> { };
         private List<string> globVideoExts = new List<string> { };
         private List<string> globDocExts = new List<string> { };
-        private List<string> globAllExt = new List<string> { };
+        private List<string> globAllExts = new List<string> { };
         private List<string> globExcludeKeys = new List<string> { };
         private List<string> globIncludeKeys = new List<string> { };
 
@@ -65,7 +68,7 @@ namespace File_Management_v2
         private void txtScanPath_TextChanged(object sender, EventArgs e)
         {
             // Aktifkan atau nonaktifkan kontrol berdasarkan apakah path scan valid
-            bool isValidPath = !string.IsNullOrWhiteSpace(txtScanPath.Text) && Directory.Exists(txtScanPath.Text);
+            bool isValidPath = !string.IsNullOrWhiteSpace(txtScanPath.Text) && System.IO.Directory.Exists(txtScanPath.Text);
             chkImage.Enabled = isValidPath;
             chkVideo.Enabled = isValidPath;
             chkDocument.Enabled = isValidPath;
@@ -135,7 +138,7 @@ namespace File_Management_v2
 
             btnCancelScan.Enabled = true;
 
-            if (string.IsNullOrWhiteSpace(txtScanPath.Text) || !Directory.Exists(txtScanPath.Text))
+            if (string.IsNullOrWhiteSpace(txtScanPath.Text) || !System.IO.Directory.Exists(txtScanPath.Text))
             {
                 MessageBox.Show("Folder sumber wajib diisi!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
@@ -145,6 +148,7 @@ namespace File_Management_v2
             globImageExts = chkImage.Checked ? txtExtImage.Text.Split(',').Select(e => e.Trim().ToUpper()).ToList() : new List<string>();
             globVideoExts = chkVideo.Checked ? txtExtVideo.Text.Split(',').Select(e => e.Trim().ToUpper()).ToList() : new List<string>();
             globDocExts = chkDocument.Checked ? txtExtDocument.Text.Split(',').Select(e => e.Trim().ToUpper()).ToList() : new List<string>();
+            globAllExts = new List<string>(globImageExts.Concat(globVideoExts).Concat(globDocExts).Distinct()); // Gabungkan semua ekstensi yang dipilih
 
             // 2. Keyword Include dan Exclude
             globIncludeKeys = chkKeyIncl.Checked ? txtKeyIncl.Text.Split(',').Select(x => x.Trim().ToUpper()).ToList() : new List<string>();
@@ -172,7 +176,7 @@ namespace File_Management_v2
             try
             {
                 var param = (Parameters.Scan)e.Argument;
-                var files = Directory.GetFiles(param.SourcePath, "*.*", SearchOption.AllDirectories);
+                var files = System.IO.Directory.GetFiles(param.SourcePath, "*.*", SearchOption.AllDirectories);
                 var result = new List<FileInfo>();
 
                 int total = files.Length;
@@ -193,42 +197,66 @@ namespace File_Management_v2
                         return;
                     }
 
-                    var filePath = files[i];
-                    var fileInfo = new FileInfo(filePath);
-                    string ext = fileInfo.Extension.TrimStart('.').ToUpper();
+                    var curr_FilePath = files[i];
+                    var fileInfo = new FileInfo(curr_FilePath);
+                    var metadata = new MetadataHelper(curr_FilePath);
+                    string curr_Ext = metadata.FileExtension.TrimStart('.').ToUpper();
 
-                    if (!(globImageExts.Contains(ext) || globVideoExts.Contains(ext) || globDocExts.Contains(ext))) continue;
+                    string curr_FileName = metadata.FileName.ToUpper();
+                    string curr_MimeType = metadata.MimeType.ToUpperInvariant();
+                    
+                    // metadata file image
+                   string curr_DateTaken = metadata.DateTaken?.ToString("yyyy-MM-dd HH:mm:ss");
+                    string curr_Iso = metadata.Iso?.ToString() ?? "";
 
-                    string nameLower = fileInfo.Name.ToUpper();
-
-                    if (globIncludeKeys.Any() && !globIncludeKeys.Any(k => nameLower.Contains(k))) continue;
-                    if (globExcludeKeys.Any(k => nameLower.Contains(k))) continue;
+                    // metadata file video
+                    string curr_MediaCreated = metadata.MediaCreated?.ToString("yyyy-MM-dd HH:mm:ss");
+                    string curr_VideoDuration = metadata.DurationSeconds?.ToString(@"hh\:mm\:ss"); // Format durasi video
 
                     // Metadata Check
-                    var props = FileProperty.GetFileMetadata(filePath);
-                    bool isOri = props.DateTaken != null || props.MediaCreated != null;
+                    bool curr_IsOri = !string.IsNullOrEmpty(curr_DateTaken) || !string.IsNullOrEmpty(curr_MediaCreated);
 
-                    if (param.OriFilter == Parameters.OriFilterOption.Ori && !isOri) continue;
-                    if (param.OriFilter == Parameters.OriFilterOption.NonOri && isOri) continue;
+                    if (!(globAllExts.Contains(curr_Ext))) continue;
+                    //if (globIncludeKeys.Any() && !globIncludeKeys.Any(k => fileName.Contains(k))) continue;
+                    if (chkKeyIncl.Checked && !globIncludeKeys.Any(k => curr_FileName.Contains(k))) continue; // Periksa apakah ada keyword yang harus di-include
+                    if (chkKeyExcl.Checked && globExcludeKeys.Any(k => curr_FileName.Contains(k))) continue; // Periksa apakah ada keyword yang harus di-exclude
 
-                    string fileStatus = FileScanner.GetFileStatus(filePath, globImageExts, globVideoExts, globDocExts);
+                    if (param.OriFilter == Parameters.OriFilterOption.Ori && !curr_IsOri) continue;
+                    if (param.OriFilter == Parameters.OriFilterOption.NonOri && curr_IsOri) continue;
+
+                    string curr_FileStatus = FileScanner.GetFileStatus(curr_FilePath, globImageExts, globVideoExts, globDocExts);
+
+                    //metadata.FileName = fileInfo.FullName;
+                    DateTime? dateTaken = null;
+                    if (!string.IsNullOrWhiteSpace(curr_DateTaken) && DateTime.TryParse(curr_DateTaken, out var dtTaken))
+                    {
+                        dateTaken = dtTaken;
+                    }
+
+                    DateTime? mediaCreated = null;
+                    if (!string.IsNullOrWhiteSpace(curr_MediaCreated) && DateTime.TryParse(curr_MediaCreated, out var dtMedia))
+                    {
+                        mediaCreated = dtMedia;
+                    }
 
                     var resultItem = new FileScanResult
                     {
-                        FileName = Path.GetFileName(filePath),
-                        FilePath = filePath,
-                        Directory = Path.GetDirectoryName(filePath) ?? "",
-                        SizeBytes = fileInfo.Length,
-                        DateCreated = fileInfo.CreationTime,
-                        DateModified = fileInfo.LastWriteTime,
-                        DateTaken = props.DateTaken,
-                        MediaCreated = props.MediaCreated,
-                        IsOri = isOri,
-                        FileStatus = fileStatus,
+                        FileName = curr_FileName,
+                        FilePath = curr_FilePath,
+                        FileDir = Path.GetDirectoryName(curr_FilePath) ?? "",
+                        FileRelDir = Path.GetRelativePath(param.SourcePath, Path.GetDirectoryName(curr_FilePath) ?? "") + Path.DirectorySeparatorChar,
+                        FileExt = metadata.FileExtension,
+                        FileType = metadata.MimeType, // Image, Video, Document, Other
+                        SizeBytes = metadata.FileSizeBytes?? 0,
+                        DateCreated = metadata.DateCreated,
+                        DateModified = metadata.DateModified,
+                        DateTaken = dateTaken,
+                        MediaCreated = mediaCreated,
+                        IsOri = curr_IsOri,
+                        FileStatus = curr_FileStatus,
                         TotalFiles = total,
                         Index = i + 1
                     };
-
                     bgWorkerScan.ReportProgress((int)((i + 1.0) / total * 100), resultItem);
                 }
 
@@ -254,18 +282,29 @@ namespace File_Management_v2
             dgvScan.Rows.Add(
                 false,
                 dgvScan.Rows.Count + 1,                                      // no
-                result.Directory,                                             // path
+                result.FileRelDir,                                             // path
                 result.FileName,                                             // name
-                Path.GetExtension(result.FileName).ToUpperInvariant(),       // type
+                result.FileType,       // type
                 result.SizeBytes,                                            // size
                 result.IsOri ? "ORI" : "NON-ORI",                            // originalStatus
                 result.DateTaken?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",     // dateTaken
                 result.MediaCreated?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",  // mediaCreated
-                result.DateCreated.ToString("yyyy-MM-dd HH:mm:ss"),          // dateCreated
+                result.DateCreated?.ToString("yyyy-MM-dd HH:mm:ss")?? "",          // dateCreated
                 result.FileStatus,                                           // fileStatus (nanti diisi proses selanjutnya)
                 ""                                                           // copyStatus (nanti diisi proses copy)
             );
-            labelProgress.Text = $"Scanning: {result.Directory} | Progress: {result.Index} of {result.TotalFiles} files.";
+
+            // Set ToolTipText untuk beberapa kolom (misal kolom 2: FileRelDir, 3: FileName, 7: DateTaken)
+            DataGridViewRow addedRow = dgvScan.Rows[dgvScan.Rows.Count - 1];
+            var metadata = new MetadataHelper(result.FilePath);
+            var indexer = new DataGridColumnIndexer(dgvScan);
+            addedRow.Cells[indexer["dirPath"]].ToolTipText = result.FileDir;
+            addedRow.Cells[indexer["name"]].ToolTipText = result.FilePath;
+            addedRow.Cells[indexer["dateTaken"]].ToolTipText = "Tanggal diambil: " + (result.DateTaken?.ToString("f") ?? "Tidak tersedia");
+            addedRow.Cells[indexer["mediaCreated"]].ToolTipText = "Media dibuat: " + (result.MediaCreated?.ToString("f") ?? "Tidak tersedia");
+            addedRow.Cells[indexer["originalStatus"]].ToolTipText = $"Camera Make: {metadata.CameraMake}\nCamera Model:{metadata.CameraModel}";
+
+            labelProgress.Text = $"Scanning: {result.FileDir} | Progress: {result.Index} of {result.TotalFiles} files.";
         }
         private void bgWorkerScan_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
@@ -462,7 +501,7 @@ namespace File_Management_v2
                 DateTime myDate = GetTargetDate(_currRow);
                 string destinationDir = BuildFinalPath(baseTargetPath, myDate, subfolderFormat);
 
-                if (!Directory.Exists(destinationDir)) Directory.CreateDirectory(destinationDir);
+                if (!System.IO.Directory.Exists(destinationDir)) System.IO.Directory.CreateDirectory(destinationDir);
 
                 string _currSourceFilePath = Path.Combine(_currDirPath, _currFilename);
 
@@ -796,6 +835,18 @@ namespace File_Management_v2
             string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             string logMessage = $"[{timestamp}] {message}";
 
+            // Simpan ke file log.txt
+            try
+            {
+                string logFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "log.txt");
+                File.AppendAllText(logFilePath, logMessage + Environment.NewLine);
+            }
+            catch (Exception ex)
+            {
+                // Jika gagal simpan log ke file, tampilkan pesan error di UI log
+                logMessage += $" (Gagal simpan log ke file: {ex.Message})";
+            }
+
             // Pastikan hanya UI update di Invoke
             if (lstBoxLog.InvokeRequired)
             {
@@ -842,6 +893,7 @@ namespace File_Management_v2
         {
             try
             {
+                rtBoxMetaFiles.Clear();
                 if (currentAction != Helper.Status.Action.None) return;
                 // Hapus gambar lama
                 picBox.Image?.Dispose();
@@ -863,21 +915,81 @@ namespace File_Management_v2
 
                 string ext = Path.GetExtension(filePath).TrimStart('.').ToUpper();
                 bool isImage = globImageExts.Contains(ext);
+                bool isVideo = globVideoExts.Contains(ext);
 
                 if (isImage)
                 {
                     picBox.Image = LoadImageSafe(filePath); // Boleh dipisah untuk duplikat
                     picBox.SizeMode = PictureBoxSizeMode.Zoom;
                 }
+                else if (isVideo)
+                {
+
+                }
                 else
                 {
                     picBox.Image = null;
+                }
+
+                Debug.WriteLine("Start reading metadata...");
+                var allMetadata = FileProperty.GetAllMetadata(filePath);
+                var metadata = new MetadataHelper(filePath);
+                if (isImage)
+                {
+                    string make = TryGetMetaByContains(allMetadata, "ExifIFD0.Make");
+                    string model = TryGetMetaByContains(allMetadata, "ExifIFD0.Model");
+                    //string dateTaken = TryGetMeta(allMetadata, "ExifSubIFD.DateTimeOriginal");
+                    string dateTaken = TryGetMetaByContains(allMetadata, "Date/TimeOriginal");
+                    //string dateTakenParsed = DateTime.Parse(dateTaken).ToString("yyyy-MM-dd HH:mm:ss");
+                    string dateTakenParsed = dateTaken;
+                    if (DateTime.TryParse(dateTakenParsed, out DateTime dt))
+                    {
+                        dateTakenParsed = dt.ToString("yyyy-MM-dd HH:mm:ss");
+                    }
+
+
+                    rtBoxMetaFiles.AppendText($"\n-- Camera Info --\nMake: {make}\nModel: {model}\nDate Taken: {dateTaken}\nDate Taken Parsed: {dateTakenParsed}\n");
+                    rtBoxMetaFiles.AppendText($"\n-- Camera Info --\nCameraMake: {metadata.CameraMake}\nModel: {metadata.CameraModel}\nDate Taken: {metadata.DateTaken}\nDate Taken Parsed: {metadata.DateTaken?.ToString("yyyy-MM-dd HH:mm:ss")}\n");
+                }
+                else if (isVideo)
+                {
+                    string created = TryGetMetaByContains(allMetadata, "QuickTimeMovieHeader.Created")
+                                  ?? TryGetMetaByContains(allMetadata, "Mp4.Created");
+                    string duration = TryGetMetaByContains(allMetadata, "QuickTimeMovieHeader.Duration")
+                                  ?? TryGetMetaByContains(allMetadata, "Mp4.Created");
+
+                    rtBoxMetaFiles.AppendText($"\n-- Video Info --\nMedia Created: {created}\nDuration: {duration}\n");
+                    rtBoxMetaFiles.AppendText($"\n-- Video Info --\nMedia Created: {metadata.MediaCreated?.ToString("yyyy-MM-dd HH:mm:ss")}\nDuration: {metadata.DurationSeconds}\n");
+                }
+                //string meta = $"";
+                //foreach (var kv in allMetadata)
+                //{
+                //    string line = $"{kv.Key}: {kv.Value}";
+                //    rtBoxMetaFiles.AppendText(line + Environment.NewLine); // Tambah ke bawah
+                //        Debug.WriteLine(line);
+                //}
+
+                string meta = $"";
+                foreach (var kv in allMetadata)
+                {
+                    string line = $"{kv.Key}: {kv.Value}";
+                    rtBoxMetaFiles.AppendText(line + Environment.NewLine); // Tambah ke bawah
+                    Debug.WriteLine(line);
                 }
             }
             catch (Exception ex)
             {
             }
         }
+        private static string TryGetMeta(Dictionary<string, string> meta, string key)
+        {
+            return meta.ContainsKey(key) ? meta[key] : "";
+        }
+        private static string TryGetMetaByContains(Dictionary<string, string> meta, string keyword)
+        {
+            return meta.FirstOrDefault(kv => kv.Key.Contains(keyword, StringComparison.OrdinalIgnoreCase)).Value;
+        }
+
         #endregion PREVIEW IMAGE
 
 
@@ -907,7 +1019,7 @@ namespace File_Management_v2
         {
             try
             {
-                bool isValidPath = Directory.Exists(txtCopyPath.Text);
+                bool isValidPath = System.IO.Directory.Exists(txtCopyPath.Text);
                 bool isValidSubFolder = !string.IsNullOrWhiteSpace(comboBoxCopySubFolder.Text);
 
                 buttonProcess.Enabled = isValidPath && isValidSubFolder; // Aktifkan tombol jika path valid

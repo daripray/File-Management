@@ -32,24 +32,14 @@
             splitter1 = new Splitter();
             groupBox1 = new GroupBox();
             dgvScan = new DataGridView();
-            checkBox = new DataGridViewCheckBoxColumn();
-            no = new DataGridViewTextBoxColumn();
-            dirPath = new DataGridViewTextBoxColumn();
-            name = new DataGridViewTextBoxColumn();
-            type = new DataGridViewTextBoxColumn();
-            size = new DataGridViewTextBoxColumn();
-            originalStatus = new DataGridViewTextBoxColumn();
-            dateTaken = new DataGridViewTextBoxColumn();
-            mediaCreated = new DataGridViewTextBoxColumn();
-            dateCreated = new DataGridViewTextBoxColumn();
-            fileStatus = new DataGridViewTextBoxColumn();
-            copyStatus = new DataGridViewTextBoxColumn();
             panel2 = new Panel();
             tabControl1 = new TabControl();
-            tabPage1 = new TabPage();
+            tabPageScan = new TabPage();
             tableLayoutPanel1 = new TableLayoutPanel();
             gbPicturePreview = new GroupBox();
+            tableLayoutPanel4 = new TableLayoutPanel();
             picBox = new PictureBox();
+            rtBoxMetaFiles = new RichTextBox();
             gbScanParams = new GroupBox();
             panel3 = new Panel();
             radioOri = new RadioButton();
@@ -71,10 +61,10 @@
             chkVideo = new CheckBox();
             btnScanBrowse = new Button();
             chkImage = new CheckBox();
-            tabPage5 = new TabPage();
+            tabPagePrefixFound = new TabPage();
             richTextBoxPrefixFound = new RichTextBox();
             label6 = new Label();
-            tabPage2 = new TabPage();
+            tabPageProcess = new TabPage();
             tableLayoutPanel2 = new TableLayoutPanel();
             groupBox3 = new GroupBox();
             panel4 = new Panel();
@@ -82,7 +72,6 @@
             radioButtonProcessMove = new RadioButton();
             radioButtonProcessCopy = new RadioButton();
             buttonProcess = new Button();
-            checkBoxMoveDeleteFile = new CheckBox();
             gBoxCopyImages = new GroupBox();
             radioProcessImageAll = new RadioButton();
             radioProcessImageOri = new RadioButton();
@@ -101,11 +90,30 @@
             label4 = new Label();
             label2 = new Label();
             txtCopyPath = new TextBox();
-            btnMove = new Button();
             btnCopyStop = new Button();
-            btnCopy = new Button();
             btnCopyBrowse = new Button();
-            tabPage4 = new TabPage();
+            tabPageValidasi = new TabPage();
+            panel5 = new Panel();
+            groupBox4 = new GroupBox();
+            groupBox2 = new GroupBox();
+            panel6 = new Panel();
+            checkBox1 = new CheckBox();
+            radioButton1 = new RadioButton();
+            radioButton2 = new RadioButton();
+            groupBox5 = new GroupBox();
+            radioButton3 = new RadioButton();
+            radioButton4 = new RadioButton();
+            radioButton5 = new RadioButton();
+            groupBox6 = new GroupBox();
+            radioButton6 = new RadioButton();
+            radioButton7 = new RadioButton();
+            radioButton8 = new RadioButton();
+            checkBox2 = new CheckBox();
+            checkBox3 = new CheckBox();
+            label7 = new Label();
+            label9 = new Label();
+            tabPageLog = new TabPage();
+            tableLayoutPanel3 = new TableLayoutPanel();
             rtBoxLog = new RichTextBox();
             lstBoxLog = new ListBox();
             statusStrip1 = new StatusStrip();
@@ -116,25 +124,45 @@
             bgWorkerScan = new System.ComponentModel.BackgroundWorker();
             bgWorkerCopy = new System.ComponentModel.BackgroundWorker();
             folderBrowserCopy = new FolderBrowserDialog();
+            checkBox = new DataGridViewCheckBoxColumn();
+            no = new DataGridViewTextBoxColumn();
+            dirPath = new DataGridViewTextBoxColumn();
+            name = new DataGridViewTextBoxColumn();
+            type = new DataGridViewTextBoxColumn();
+            size = new DataGridViewTextBoxColumn();
+            originalStatus = new DataGridViewTextBoxColumn();
+            dateTaken = new DataGridViewTextBoxColumn();
+            mediaCreated = new DataGridViewTextBoxColumn();
+            dateCreated = new DataGridViewTextBoxColumn();
+            fileStatus = new DataGridViewTextBoxColumn();
+            copyStatus = new DataGridViewTextBoxColumn();
             panel1.SuspendLayout();
             groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dgvScan).BeginInit();
             panel2.SuspendLayout();
             tabControl1.SuspendLayout();
-            tabPage1.SuspendLayout();
+            tabPageScan.SuspendLayout();
             tableLayoutPanel1.SuspendLayout();
             gbPicturePreview.SuspendLayout();
+            tableLayoutPanel4.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)picBox).BeginInit();
             gbScanParams.SuspendLayout();
             panel3.SuspendLayout();
-            tabPage5.SuspendLayout();
-            tabPage2.SuspendLayout();
+            tabPagePrefixFound.SuspendLayout();
+            tabPageProcess.SuspendLayout();
             tableLayoutPanel2.SuspendLayout();
             groupBox3.SuspendLayout();
             panel4.SuspendLayout();
             gBoxCopyImages.SuspendLayout();
             gBoxCopyVideos.SuspendLayout();
-            tabPage4.SuspendLayout();
+            tabPageValidasi.SuspendLayout();
+            panel5.SuspendLayout();
+            groupBox2.SuspendLayout();
+            panel6.SuspendLayout();
+            groupBox5.SuspendLayout();
+            groupBox6.SuspendLayout();
+            tabPageLog.SuspendLayout();
+            tableLayoutPanel3.SuspendLayout();
             statusStrip1.SuspendLayout();
             SuspendLayout();
             // 
@@ -147,7 +175,7 @@
             panel1.Dock = DockStyle.Fill;
             panel1.Location = new Point(0, 0);
             panel1.Name = "panel1";
-            panel1.Size = new Size(1204, 581);
+            panel1.Size = new Size(1033, 581);
             panel1.TabIndex = 0;
             // 
             // splitter1
@@ -164,7 +192,7 @@
             groupBox1.Controls.Add(dgvScan);
             groupBox1.Location = new Point(16, 308);
             groupBox1.Name = "groupBox1";
-            groupBox1.Size = new Size(1172, 248);
+            groupBox1.Size = new Size(1001, 248);
             groupBox1.TabIndex = 6;
             groupBox1.TabStop = false;
             groupBox1.Text = "Data";
@@ -180,94 +208,11 @@
             dgvScan.Location = new Point(3, 19);
             dgvScan.Name = "dgvScan";
             dgvScan.ReadOnly = true;
-            dgvScan.Size = new Size(1166, 226);
+            dgvScan.Size = new Size(995, 226);
             dgvScan.TabIndex = 3;
             dgvScan.CellClick += dgvScan_CellClick;
             dgvScan.ColumnHeaderMouseClick += dgvScan_ColumnHeaderMouseClick;
             dgvScan.SelectionChanged += dgvScan_SelectionChanged;
-            // 
-            // checkBox
-            // 
-            checkBox.AutoSizeMode = DataGridViewAutoSizeColumnMode.ColumnHeader;
-            checkBox.HeaderText = "Pilih";
-            checkBox.Name = "checkBox";
-            checkBox.ReadOnly = true;
-            checkBox.Resizable = DataGridViewTriState.False;
-            checkBox.Width = 36;
-            // 
-            // no
-            // 
-            no.HeaderText = "No";
-            no.Name = "no";
-            no.ReadOnly = true;
-            no.Width = 50;
-            // 
-            // dirPath
-            // 
-            dirPath.HeaderText = "Directory";
-            dirPath.Name = "dirPath";
-            dirPath.ReadOnly = true;
-            dirPath.Width = 150;
-            // 
-            // name
-            // 
-            name.HeaderText = "Name";
-            name.Name = "name";
-            name.ReadOnly = true;
-            // 
-            // type
-            // 
-            type.HeaderText = "Type";
-            type.Name = "type";
-            type.ReadOnly = true;
-            type.Width = 70;
-            // 
-            // size
-            // 
-            size.HeaderText = "Size (B)";
-            size.Name = "size";
-            size.ReadOnly = true;
-            size.Width = 70;
-            // 
-            // originalStatus
-            // 
-            originalStatus.HeaderText = "Original Status";
-            originalStatus.Name = "originalStatus";
-            originalStatus.ReadOnly = true;
-            originalStatus.Width = 70;
-            // 
-            // dateTaken
-            // 
-            dateTaken.HeaderText = "Date Taken";
-            dateTaken.Name = "dateTaken";
-            dateTaken.ReadOnly = true;
-            dateTaken.Width = 120;
-            // 
-            // mediaCreated
-            // 
-            mediaCreated.HeaderText = "Media Created";
-            mediaCreated.Name = "mediaCreated";
-            mediaCreated.ReadOnly = true;
-            mediaCreated.Width = 120;
-            // 
-            // dateCreated
-            // 
-            dateCreated.HeaderText = "Date Created";
-            dateCreated.Name = "dateCreated";
-            dateCreated.ReadOnly = true;
-            dateCreated.Width = 120;
-            // 
-            // fileStatus
-            // 
-            fileStatus.HeaderText = "Quality Status";
-            fileStatus.Name = "fileStatus";
-            fileStatus.ReadOnly = true;
-            // 
-            // copyStatus
-            // 
-            copyStatus.HeaderText = "Process Status";
-            copyStatus.Name = "copyStatus";
-            copyStatus.ReadOnly = true;
             // 
             // panel2
             // 
@@ -275,38 +220,39 @@
             panel2.Controls.Add(tabControl1);
             panel2.Location = new Point(12, 12);
             panel2.Name = "panel2";
-            panel2.Size = new Size(1181, 294);
+            panel2.Size = new Size(1010, 294);
             panel2.TabIndex = 5;
             // 
             // tabControl1
             // 
             tabControl1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            tabControl1.Controls.Add(tabPage1);
-            tabControl1.Controls.Add(tabPage5);
-            tabControl1.Controls.Add(tabPage2);
-            tabControl1.Controls.Add(tabPage4);
+            tabControl1.Controls.Add(tabPageScan);
+            tabControl1.Controls.Add(tabPagePrefixFound);
+            tabControl1.Controls.Add(tabPageProcess);
+            tabControl1.Controls.Add(tabPageValidasi);
+            tabControl1.Controls.Add(tabPageLog);
             tabControl1.Location = new Point(0, 0);
             tabControl1.Name = "tabControl1";
             tabControl1.SelectedIndex = 0;
-            tabControl1.Size = new Size(1181, 294);
+            tabControl1.Size = new Size(1010, 294);
             tabControl1.TabIndex = 2;
             // 
-            // tabPage1
+            // tabPageScan
             // 
-            tabPage1.Controls.Add(tableLayoutPanel1);
-            tabPage1.Location = new Point(4, 24);
-            tabPage1.Name = "tabPage1";
-            tabPage1.Padding = new Padding(3);
-            tabPage1.Size = new Size(1173, 266);
-            tabPage1.TabIndex = 0;
-            tabPage1.Text = "Scan Images";
-            tabPage1.UseVisualStyleBackColor = true;
+            tabPageScan.Controls.Add(tableLayoutPanel1);
+            tabPageScan.Location = new Point(4, 24);
+            tabPageScan.Name = "tabPageScan";
+            tabPageScan.Padding = new Padding(3);
+            tabPageScan.Size = new Size(1002, 266);
+            tabPageScan.TabIndex = 0;
+            tabPageScan.Text = "Scan Images";
+            tabPageScan.UseVisualStyleBackColor = true;
             // 
             // tableLayoutPanel1
             // 
             tableLayoutPanel1.ColumnCount = 2;
-            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 57.2446556F));
-            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42.7553444F));
+            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50.0428467F));
+            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 49.9571533F));
             tableLayoutPanel1.Controls.Add(gbPicturePreview, 1, 0);
             tableLayoutPanel1.Controls.Add(gbScanParams, 0, 0);
             tableLayoutPanel1.Dock = DockStyle.Fill;
@@ -314,29 +260,53 @@
             tableLayoutPanel1.Name = "tableLayoutPanel1";
             tableLayoutPanel1.RowCount = 1;
             tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            tableLayoutPanel1.Size = new Size(1167, 260);
+            tableLayoutPanel1.Size = new Size(996, 260);
             tableLayoutPanel1.TabIndex = 11;
             // 
             // gbPicturePreview
             // 
-            gbPicturePreview.Controls.Add(picBox);
+            gbPicturePreview.Controls.Add(tableLayoutPanel4);
             gbPicturePreview.Dock = DockStyle.Fill;
-            gbPicturePreview.Location = new Point(671, 3);
+            gbPicturePreview.Location = new Point(501, 3);
             gbPicturePreview.Name = "gbPicturePreview";
-            gbPicturePreview.Size = new Size(493, 254);
+            gbPicturePreview.Size = new Size(492, 254);
             gbPicturePreview.TabIndex = 10;
             gbPicturePreview.TabStop = false;
             gbPicturePreview.Text = "Preview";
             // 
+            // tableLayoutPanel4
+            // 
+            tableLayoutPanel4.ColumnCount = 2;
+            tableLayoutPanel4.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            tableLayoutPanel4.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            tableLayoutPanel4.Controls.Add(picBox, 0, 0);
+            tableLayoutPanel4.Controls.Add(rtBoxMetaFiles, 1, 0);
+            tableLayoutPanel4.Dock = DockStyle.Fill;
+            tableLayoutPanel4.Location = new Point(3, 19);
+            tableLayoutPanel4.Name = "tableLayoutPanel4";
+            tableLayoutPanel4.RowCount = 1;
+            tableLayoutPanel4.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            tableLayoutPanel4.Size = new Size(486, 232);
+            tableLayoutPanel4.TabIndex = 3;
+            // 
             // picBox
             // 
             picBox.Dock = DockStyle.Fill;
-            picBox.Location = new Point(3, 19);
+            picBox.Location = new Point(3, 3);
             picBox.Name = "picBox";
-            picBox.Size = new Size(487, 232);
+            picBox.Size = new Size(237, 226);
             picBox.SizeMode = PictureBoxSizeMode.Zoom;
             picBox.TabIndex = 0;
             picBox.TabStop = false;
+            // 
+            // rtBoxMetaFiles
+            // 
+            rtBoxMetaFiles.Dock = DockStyle.Fill;
+            rtBoxMetaFiles.Location = new Point(246, 3);
+            rtBoxMetaFiles.Name = "rtBoxMetaFiles";
+            rtBoxMetaFiles.Size = new Size(237, 226);
+            rtBoxMetaFiles.TabIndex = 2;
+            rtBoxMetaFiles.Text = "";
             // 
             // gbScanParams
             // 
@@ -360,7 +330,7 @@
             gbScanParams.Dock = DockStyle.Fill;
             gbScanParams.Location = new Point(3, 3);
             gbScanParams.Name = "gbScanParams";
-            gbScanParams.Size = new Size(662, 254);
+            gbScanParams.Size = new Size(492, 254);
             gbScanParams.TabIndex = 9;
             gbScanParams.TabStop = false;
             gbScanParams.Text = "Parameter";
@@ -433,7 +403,7 @@
             txtScanPath.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             txtScanPath.Location = new Point(117, 23);
             txtScanPath.Name = "txtScanPath";
-            txtScanPath.Size = new Size(433, 23);
+            txtScanPath.Size = new Size(263, 23);
             txtScanPath.TabIndex = 1;
             txtScanPath.TextChanged += txtScanPath_TextChanged;
             // 
@@ -442,7 +412,7 @@
             btnCancelScan.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnCancelScan.BackColor = Color.Red;
             btnCancelScan.Enabled = false;
-            btnCancelScan.Location = new Point(559, 132);
+            btnCancelScan.Location = new Point(389, 132);
             btnCancelScan.Name = "btnCancelScan";
             btnCancelScan.Size = new Size(93, 67);
             btnCancelScan.TabIndex = 7;
@@ -456,7 +426,7 @@
             txtExtVideo.Enabled = false;
             txtExtVideo.Location = new Point(117, 82);
             txtExtVideo.Name = "txtExtVideo";
-            txtExtVideo.Size = new Size(433, 23);
+            txtExtVideo.Size = new Size(263, 23);
             txtExtVideo.TabIndex = 1;
             txtExtVideo.Text = "MP4, MOV, AVI, MKV, FLV, WMV, M4V, WEBM, MPG, MPEG, 3GP, MTS, M2TS, TS, OGV";
             // 
@@ -466,7 +436,7 @@
             btnScan.BackColor = Color.LawnGreen;
             btnScan.Enabled = false;
             btnScan.Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            btnScan.Location = new Point(559, 59);
+            btnScan.Location = new Point(389, 59);
             btnScan.Name = "btnScan";
             btnScan.Size = new Size(93, 67);
             btnScan.TabIndex = 7;
@@ -480,7 +450,7 @@
             txtExtImage.Enabled = false;
             txtExtImage.Location = new Point(117, 53);
             txtExtImage.Name = "txtExtImage";
-            txtExtImage.Size = new Size(433, 23);
+            txtExtImage.Size = new Size(263, 23);
             txtExtImage.TabIndex = 1;
             txtExtImage.Text = "JPG, JPEG, PNG, GIF, BMP, TIFF, TIF, WEBP, HEIC, HEIF, RAW, CR2, NEF, ORF, SR2, ARW, DNG, PSD, ICO, SVG";
             // 
@@ -502,7 +472,7 @@
             txtExtDocument.Enabled = false;
             txtExtDocument.Location = new Point(117, 111);
             txtExtDocument.Name = "txtExtDocument";
-            txtExtDocument.Size = new Size(433, 23);
+            txtExtDocument.Size = new Size(263, 23);
             txtExtDocument.TabIndex = 1;
             txtExtDocument.Text = "DOC, DOCX, PDF, XLS, XLSX, PPT, PPTX, TXT, RTF, ODT, ODS, ODP, CSV, XML, HTML, HTM, JSON, MD, LOG";
             // 
@@ -524,7 +494,7 @@
             txtKeyIncl.Enabled = false;
             txtKeyIncl.Location = new Point(117, 140);
             txtKeyIncl.Name = "txtKeyIncl";
-            txtKeyIncl.Size = new Size(433, 23);
+            txtKeyIncl.Size = new Size(263, 23);
             txtKeyIncl.TabIndex = 1;
             txtKeyIncl.Text = "IMG_, VID_, MOV_, DSC, PXL, JPEG, PHOTO, SAMSUNG, ANDROID, DCIM, CAM, CAMERA, DCM, PIC, MV, IMG_E";
             // 
@@ -546,7 +516,7 @@
             txtKeyExcl.Enabled = false;
             txtKeyExcl.Location = new Point(117, 169);
             txtKeyExcl.Name = "txtKeyExcl";
-            txtKeyExcl.Size = new Size(433, 23);
+            txtKeyExcl.Size = new Size(263, 23);
             txtKeyExcl.TabIndex = 1;
             txtKeyExcl.Text = ".IMG, .VID, .MOV, SCREENSHOT";
             // 
@@ -565,7 +535,7 @@
             // btnScanBrowse
             // 
             btnScanBrowse.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnScanBrowse.Location = new Point(559, 22);
+            btnScanBrowse.Location = new Point(389, 22);
             btnScanBrowse.Name = "btnScanBrowse";
             btnScanBrowse.Size = new Size(93, 23);
             btnScanBrowse.TabIndex = 2;
@@ -585,24 +555,24 @@
             chkImage.UseVisualStyleBackColor = true;
             chkImage.CheckedChanged += chkImage_CheckedChanged;
             // 
-            // tabPage5
+            // tabPagePrefixFound
             // 
-            tabPage5.Controls.Add(richTextBoxPrefixFound);
-            tabPage5.Controls.Add(label6);
-            tabPage5.Location = new Point(4, 24);
-            tabPage5.Name = "tabPage5";
-            tabPage5.Padding = new Padding(3);
-            tabPage5.Size = new Size(1173, 266);
-            tabPage5.TabIndex = 4;
-            tabPage5.Text = "Prefix Found";
-            tabPage5.UseVisualStyleBackColor = true;
+            tabPagePrefixFound.Controls.Add(richTextBoxPrefixFound);
+            tabPagePrefixFound.Controls.Add(label6);
+            tabPagePrefixFound.Location = new Point(4, 24);
+            tabPagePrefixFound.Name = "tabPagePrefixFound";
+            tabPagePrefixFound.Padding = new Padding(3);
+            tabPagePrefixFound.Size = new Size(1002, 266);
+            tabPagePrefixFound.TabIndex = 4;
+            tabPagePrefixFound.Text = "Prefix Found";
+            tabPagePrefixFound.UseVisualStyleBackColor = true;
             // 
             // richTextBoxPrefixFound
             // 
             richTextBoxPrefixFound.Dock = DockStyle.Fill;
             richTextBoxPrefixFound.Location = new Point(3, 3);
             richTextBoxPrefixFound.Name = "richTextBoxPrefixFound";
-            richTextBoxPrefixFound.Size = new Size(1167, 260);
+            richTextBoxPrefixFound.Size = new Size(996, 260);
             richTextBoxPrefixFound.TabIndex = 2;
             richTextBoxPrefixFound.Text = "";
             // 
@@ -615,16 +585,16 @@
             label6.TabIndex = 1;
             label6.Text = "Prefix Found:";
             // 
-            // tabPage2
+            // tabPageProcess
             // 
-            tabPage2.Controls.Add(tableLayoutPanel2);
-            tabPage2.Location = new Point(4, 24);
-            tabPage2.Name = "tabPage2";
-            tabPage2.Padding = new Padding(3);
-            tabPage2.Size = new Size(1173, 266);
-            tabPage2.TabIndex = 1;
-            tabPage2.Text = "Copy/Move";
-            tabPage2.UseVisualStyleBackColor = true;
+            tabPageProcess.Controls.Add(tableLayoutPanel2);
+            tabPageProcess.Location = new Point(4, 24);
+            tabPageProcess.Name = "tabPageProcess";
+            tabPageProcess.Padding = new Padding(3);
+            tabPageProcess.Size = new Size(1002, 266);
+            tabPageProcess.TabIndex = 1;
+            tabPageProcess.Text = "Copy/Move";
+            tabPageProcess.UseVisualStyleBackColor = true;
             // 
             // tableLayoutPanel2
             // 
@@ -636,14 +606,13 @@
             tableLayoutPanel2.Name = "tableLayoutPanel2";
             tableLayoutPanel2.RowCount = 1;
             tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            tableLayoutPanel2.Size = new Size(1167, 260);
+            tableLayoutPanel2.Size = new Size(996, 260);
             tableLayoutPanel2.TabIndex = 12;
             // 
             // groupBox3
             // 
             groupBox3.Controls.Add(panel4);
             groupBox3.Controls.Add(buttonProcess);
-            groupBox3.Controls.Add(checkBoxMoveDeleteFile);
             groupBox3.Controls.Add(gBoxCopyImages);
             groupBox3.Controls.Add(gBoxCopyVideos);
             groupBox3.Controls.Add(checkBoxCopyImages);
@@ -656,14 +625,12 @@
             groupBox3.Controls.Add(label4);
             groupBox3.Controls.Add(label2);
             groupBox3.Controls.Add(txtCopyPath);
-            groupBox3.Controls.Add(btnMove);
             groupBox3.Controls.Add(btnCopyStop);
-            groupBox3.Controls.Add(btnCopy);
             groupBox3.Controls.Add(btnCopyBrowse);
             groupBox3.Dock = DockStyle.Fill;
             groupBox3.Location = new Point(3, 3);
             groupBox3.Name = "groupBox3";
-            groupBox3.Size = new Size(1161, 254);
+            groupBox3.Size = new Size(990, 254);
             groupBox3.TabIndex = 9;
             groupBox3.TabStop = false;
             groupBox3.Text = "Parameter";
@@ -716,22 +683,16 @@
             // 
             // buttonProcess
             // 
-            buttonProcess.Location = new Point(553, 112);
+            buttonProcess.BackColor = Color.LawnGreen;
+            buttonProcess.FlatStyle = FlatStyle.Popup;
+            buttonProcess.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            buttonProcess.Location = new Point(476, 104);
             buttonProcess.Name = "buttonProcess";
-            buttonProcess.Size = new Size(119, 99);
+            buttonProcess.Size = new Size(119, 115);
             buttonProcess.TabIndex = 15;
-            buttonProcess.Text = "Copy";
-            buttonProcess.UseVisualStyleBackColor = true;
+            buttonProcess.Text = "Process";
+            buttonProcess.UseVisualStyleBackColor = false;
             buttonProcess.Click += buttonProcess_Click;
-            // 
-            // checkBoxMoveDeleteFile
-            // 
-            checkBoxMoveDeleteFile.AutoSize = true;
-            checkBoxMoveDeleteFile.Location = new Point(903, 137);
-            checkBoxMoveDeleteFile.Name = "checkBoxMoveDeleteFile";
-            checkBoxMoveDeleteFile.Size = new Size(15, 14);
-            checkBoxMoveDeleteFile.TabIndex = 14;
-            checkBoxMoveDeleteFile.UseVisualStyleBackColor = true;
             // 
             // gBoxCopyImages
             // 
@@ -868,7 +829,7 @@
             comboBoxCopySubFolder.Items.AddRange(new object[] { "/yyyy", "/yyyy/MM", "/yyyy/yyyyMM/", "/yyyy/yyyy_MM/", "/yyyy/MM/dd", "/yyyy/yyyyMM/yyyyMMdd", "/yyyy/yyyy_MM/yyyy_MM_dd" });
             comboBoxCopySubFolder.Location = new Point(117, 54);
             comboBoxCopySubFolder.Name = "comboBoxCopySubFolder";
-            comboBoxCopySubFolder.Size = new Size(932, 23);
+            comboBoxCopySubFolder.Size = new Size(761, 23);
             comboBoxCopySubFolder.TabIndex = 8;
             comboBoxCopySubFolder.SelectedIndexChanged += comboBoxCopySubFolder_SelectedIndexChanged;
             // 
@@ -922,52 +883,28 @@
             txtCopyPath.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             txtCopyPath.Location = new Point(117, 23);
             txtCopyPath.Name = "txtCopyPath";
-            txtCopyPath.Size = new Size(934, 23);
+            txtCopyPath.Size = new Size(763, 23);
             txtCopyPath.TabIndex = 1;
             txtCopyPath.TextChanged += txtCopyPath_TextChanged;
-            // 
-            // btnMove
-            // 
-            btnMove.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnMove.BackColor = Color.DodgerBlue;
-            btnMove.Enabled = false;
-            btnMove.Font = new Font("Segoe UI", 14.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            btnMove.Location = new Point(1060, 124);
-            btnMove.Name = "btnMove";
-            btnMove.Size = new Size(93, 54);
-            btnMove.TabIndex = 7;
-            btnMove.Text = "Move";
-            btnMove.UseVisualStyleBackColor = false;
             // 
             // btnCopyStop
             // 
             btnCopyStop.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnCopyStop.BackColor = Color.Red;
             btnCopyStop.Enabled = false;
-            btnCopyStop.Location = new Point(736, 142);
+            btnCopyStop.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            btnCopyStop.Location = new Point(636, 104);
             btnCopyStop.Name = "btnCopyStop";
-            btnCopyStop.Size = new Size(93, 54);
+            btnCopyStop.Size = new Size(93, 115);
             btnCopyStop.TabIndex = 7;
             btnCopyStop.Text = "Stop";
             btnCopyStop.UseVisualStyleBackColor = false;
             btnCopyStop.Click += btnCopyStop_Click;
             // 
-            // btnCopy
-            // 
-            btnCopy.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnCopy.BackColor = Color.LawnGreen;
-            btnCopy.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
-            btnCopy.Location = new Point(1060, 59);
-            btnCopy.Name = "btnCopy";
-            btnCopy.Size = new Size(93, 59);
-            btnCopy.TabIndex = 7;
-            btnCopy.Text = "Copy";
-            btnCopy.UseVisualStyleBackColor = false;
-            // 
             // btnCopyBrowse
             // 
             btnCopyBrowse.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnCopyBrowse.Location = new Point(1060, 22);
+            btnCopyBrowse.Location = new Point(889, 22);
             btnCopyBrowse.Name = "btnCopyBrowse";
             btnCopyBrowse.Size = new Size(93, 23);
             btnCopyBrowse.TabIndex = 2;
@@ -975,34 +912,274 @@
             btnCopyBrowse.UseVisualStyleBackColor = true;
             btnCopyBrowse.Click += btnCopyBrowse_Click;
             // 
-            // tabPage4
+            // tabPageValidasi
             // 
-            tabPage4.Controls.Add(rtBoxLog);
-            tabPage4.Controls.Add(lstBoxLog);
-            tabPage4.Location = new Point(4, 24);
-            tabPage4.Name = "tabPage4";
-            tabPage4.Size = new Size(1173, 266);
-            tabPage4.TabIndex = 3;
-            tabPage4.Text = "Log";
-            tabPage4.UseVisualStyleBackColor = true;
+            tabPageValidasi.Controls.Add(panel5);
+            tabPageValidasi.Location = new Point(4, 24);
+            tabPageValidasi.Name = "tabPageValidasi";
+            tabPageValidasi.Padding = new Padding(3);
+            tabPageValidasi.Size = new Size(1002, 266);
+            tabPageValidasi.TabIndex = 5;
+            tabPageValidasi.Text = "Validasi";
+            tabPageValidasi.UseVisualStyleBackColor = true;
+            // 
+            // panel5
+            // 
+            panel5.Controls.Add(groupBox4);
+            panel5.Controls.Add(groupBox2);
+            panel5.Dock = DockStyle.Fill;
+            panel5.Location = new Point(3, 3);
+            panel5.Name = "panel5";
+            panel5.Size = new Size(996, 260);
+            panel5.TabIndex = 0;
+            // 
+            // groupBox4
+            // 
+            groupBox4.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            groupBox4.Location = new Point(509, 3);
+            groupBox4.Name = "groupBox4";
+            groupBox4.Size = new Size(484, 250);
+            groupBox4.TabIndex = 1;
+            groupBox4.TabStop = false;
+            groupBox4.Text = "groupBox4";
+            // 
+            // groupBox2
+            // 
+            groupBox2.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
+            groupBox2.Controls.Add(panel6);
+            groupBox2.Controls.Add(groupBox5);
+            groupBox2.Controls.Add(groupBox6);
+            groupBox2.Controls.Add(checkBox2);
+            groupBox2.Controls.Add(checkBox3);
+            groupBox2.Controls.Add(label7);
+            groupBox2.Controls.Add(label9);
+            groupBox2.Location = new Point(3, 3);
+            groupBox2.Name = "groupBox2";
+            groupBox2.Size = new Size(500, 250);
+            groupBox2.TabIndex = 0;
+            groupBox2.TabStop = false;
+            groupBox2.Text = "Check Meta";
+            // 
+            // panel6
+            // 
+            panel6.Controls.Add(checkBox1);
+            panel6.Controls.Add(radioButton1);
+            panel6.Controls.Add(radioButton2);
+            panel6.Location = new Point(116, 22);
+            panel6.Name = "panel6";
+            panel6.Size = new Size(331, 35);
+            panel6.TabIndex = 23;
+            // 
+            // checkBox1
+            // 
+            checkBox1.AutoSize = true;
+            checkBox1.Enabled = false;
+            checkBox1.Location = new Point(166, 10);
+            checkBox1.Name = "checkBox1";
+            checkBox1.Size = new Size(112, 19);
+            checkBox1.TabIndex = 1;
+            checkBox1.Text = "Delete Old FIles?";
+            checkBox1.UseVisualStyleBackColor = true;
+            // 
+            // radioButton1
+            // 
+            radioButton1.AutoSize = true;
+            radioButton1.Enabled = false;
+            radioButton1.Location = new Point(89, 8);
+            radioButton1.Name = "radioButton1";
+            radioButton1.Size = new Size(55, 19);
+            radioButton1.TabIndex = 0;
+            radioButton1.Text = "Move";
+            radioButton1.UseVisualStyleBackColor = true;
+            // 
+            // radioButton2
+            // 
+            radioButton2.AutoSize = true;
+            radioButton2.Checked = true;
+            radioButton2.Enabled = false;
+            radioButton2.Location = new Point(14, 8);
+            radioButton2.Name = "radioButton2";
+            radioButton2.Size = new Size(53, 19);
+            radioButton2.TabIndex = 0;
+            radioButton2.TabStop = true;
+            radioButton2.Text = "Copy";
+            radioButton2.UseVisualStyleBackColor = true;
+            // 
+            // groupBox5
+            // 
+            groupBox5.Controls.Add(radioButton3);
+            groupBox5.Controls.Add(radioButton4);
+            groupBox5.Controls.Add(radioButton5);
+            groupBox5.Location = new Point(186, 63);
+            groupBox5.Name = "groupBox5";
+            groupBox5.Size = new Size(258, 41);
+            groupBox5.TabIndex = 22;
+            groupBox5.TabStop = false;
+            // 
+            // radioButton3
+            // 
+            radioButton3.AutoSize = true;
+            radioButton3.Checked = true;
+            radioButton3.Enabled = false;
+            radioButton3.Location = new Point(6, 14);
+            radioButton3.Name = "radioButton3";
+            radioButton3.Size = new Size(39, 19);
+            radioButton3.TabIndex = 10;
+            radioButton3.TabStop = true;
+            radioButton3.Text = "All";
+            radioButton3.UseVisualStyleBackColor = true;
+            // 
+            // radioButton4
+            // 
+            radioButton4.AutoSize = true;
+            radioButton4.Enabled = false;
+            radioButton4.Location = new Point(61, 14);
+            radioButton4.Name = "radioButton4";
+            radioButton4.Size = new Size(41, 19);
+            radioButton4.TabIndex = 10;
+            radioButton4.Text = "Ori";
+            radioButton4.UseVisualStyleBackColor = true;
+            // 
+            // radioButton5
+            // 
+            radioButton5.AutoSize = true;
+            radioButton5.Enabled = false;
+            radioButton5.Location = new Point(113, 14);
+            radioButton5.Name = "radioButton5";
+            radioButton5.Size = new Size(67, 19);
+            radioButton5.TabIndex = 10;
+            radioButton5.Text = "Non Ori";
+            radioButton5.UseVisualStyleBackColor = true;
+            // 
+            // groupBox6
+            // 
+            groupBox6.Controls.Add(radioButton6);
+            groupBox6.Controls.Add(radioButton7);
+            groupBox6.Controls.Add(radioButton8);
+            groupBox6.Location = new Point(186, 96);
+            groupBox6.Name = "groupBox6";
+            groupBox6.Size = new Size(258, 41);
+            groupBox6.TabIndex = 21;
+            groupBox6.TabStop = false;
+            // 
+            // radioButton6
+            // 
+            radioButton6.AutoSize = true;
+            radioButton6.Checked = true;
+            radioButton6.Enabled = false;
+            radioButton6.Location = new Point(6, 14);
+            radioButton6.Name = "radioButton6";
+            radioButton6.Size = new Size(39, 19);
+            radioButton6.TabIndex = 10;
+            radioButton6.TabStop = true;
+            radioButton6.Text = "All";
+            radioButton6.UseVisualStyleBackColor = true;
+            // 
+            // radioButton7
+            // 
+            radioButton7.AutoSize = true;
+            radioButton7.Enabled = false;
+            radioButton7.Location = new Point(61, 14);
+            radioButton7.Name = "radioButton7";
+            radioButton7.Size = new Size(41, 19);
+            radioButton7.TabIndex = 10;
+            radioButton7.Text = "Ori";
+            radioButton7.UseVisualStyleBackColor = true;
+            // 
+            // radioButton8
+            // 
+            radioButton8.AutoSize = true;
+            radioButton8.Enabled = false;
+            radioButton8.Location = new Point(113, 14);
+            radioButton8.Name = "radioButton8";
+            radioButton8.Size = new Size(67, 19);
+            radioButton8.TabIndex = 10;
+            radioButton8.Text = "Non Ori";
+            radioButton8.UseVisualStyleBackColor = true;
+            // 
+            // checkBox2
+            // 
+            checkBox2.AutoSize = true;
+            checkBox2.Enabled = false;
+            checkBox2.Location = new Point(116, 77);
+            checkBox2.Name = "checkBox2";
+            checkBox2.Size = new Size(64, 19);
+            checkBox2.TabIndex = 19;
+            checkBox2.Text = "Images";
+            checkBox2.UseVisualStyleBackColor = true;
+            // 
+            // checkBox3
+            // 
+            checkBox3.AutoSize = true;
+            checkBox3.Enabled = false;
+            checkBox3.Location = new Point(116, 111);
+            checkBox3.Name = "checkBox3";
+            checkBox3.Size = new Size(61, 19);
+            checkBox3.TabIndex = 20;
+            checkBox3.Text = "Videos";
+            checkBox3.UseVisualStyleBackColor = true;
+            // 
+            // label7
+            // 
+            label7.AutoSize = true;
+            label7.Location = new Point(15, 79);
+            label7.Name = "label7";
+            label7.Size = new Size(88, 15);
+            label7.TabIndex = 17;
+            label7.Text = "Files Extensions";
+            // 
+            // label9
+            // 
+            label9.AutoSize = true;
+            label9.Location = new Point(15, 33);
+            label9.Name = "label9";
+            label9.Size = new Size(52, 15);
+            label9.TabIndex = 18;
+            label9.Text = "Process?";
+            // 
+            // tabPageLog
+            // 
+            tabPageLog.Controls.Add(tableLayoutPanel3);
+            tabPageLog.Location = new Point(4, 24);
+            tabPageLog.Name = "tabPageLog";
+            tabPageLog.Size = new Size(1002, 266);
+            tabPageLog.TabIndex = 3;
+            tabPageLog.Text = "Log";
+            tabPageLog.UseVisualStyleBackColor = true;
+            // 
+            // tableLayoutPanel3
+            // 
+            tableLayoutPanel3.ColumnCount = 2;
+            tableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            tableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            tableLayoutPanel3.Controls.Add(rtBoxLog, 1, 0);
+            tableLayoutPanel3.Controls.Add(lstBoxLog, 0, 0);
+            tableLayoutPanel3.Dock = DockStyle.Fill;
+            tableLayoutPanel3.Location = new Point(0, 0);
+            tableLayoutPanel3.Name = "tableLayoutPanel3";
+            tableLayoutPanel3.RowCount = 1;
+            tableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            tableLayoutPanel3.Size = new Size(1002, 266);
+            tableLayoutPanel3.TabIndex = 2;
             // 
             // rtBoxLog
             // 
-            rtBoxLog.Location = new Point(472, 0);
+            rtBoxLog.Dock = DockStyle.Fill;
+            rtBoxLog.Location = new Point(504, 3);
             rtBoxLog.Name = "rtBoxLog";
-            rtBoxLog.Size = new Size(470, 259);
+            rtBoxLog.Size = new Size(495, 260);
             rtBoxLog.TabIndex = 1;
             rtBoxLog.Text = "";
             // 
             // lstBoxLog
             // 
-            lstBoxLog.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            lstBoxLog.Dock = DockStyle.Fill;
             lstBoxLog.FormattingEnabled = true;
             lstBoxLog.ImeMode = ImeMode.NoControl;
             lstBoxLog.ItemHeight = 15;
-            lstBoxLog.Location = new Point(0, 0);
+            lstBoxLog.Location = new Point(3, 3);
             lstBoxLog.Name = "lstBoxLog";
-            lstBoxLog.Size = new Size(466, 259);
+            lstBoxLog.Size = new Size(495, 260);
             lstBoxLog.TabIndex = 0;
             // 
             // statusStrip1
@@ -1010,7 +1187,7 @@
             statusStrip1.Items.AddRange(new ToolStripItem[] { progressBarGlobal, labelProgress, progressBarPerFile });
             statusStrip1.Location = new Point(0, 559);
             statusStrip1.Name = "statusStrip1";
-            statusStrip1.Size = new Size(1204, 22);
+            statusStrip1.Size = new Size(1033, 22);
             statusStrip1.TabIndex = 1;
             statusStrip1.Text = "-";
             // 
@@ -1053,11 +1230,94 @@
             bgWorkerCopy.ProgressChanged += bgWorkerCopy_ProgressChanged;
             bgWorkerCopy.RunWorkerCompleted += bgWorkerCopy_RunWorkerCompleted;
             // 
+            // checkBox
+            // 
+            checkBox.AutoSizeMode = DataGridViewAutoSizeColumnMode.ColumnHeader;
+            checkBox.HeaderText = "Pilih";
+            checkBox.Name = "checkBox";
+            checkBox.ReadOnly = true;
+            checkBox.Resizable = DataGridViewTriState.False;
+            checkBox.Width = 36;
+            // 
+            // no
+            // 
+            no.HeaderText = "No";
+            no.Name = "no";
+            no.ReadOnly = true;
+            no.Width = 50;
+            // 
+            // dirPath
+            // 
+            dirPath.HeaderText = "Directory";
+            dirPath.Name = "dirPath";
+            dirPath.ReadOnly = true;
+            dirPath.Width = 150;
+            // 
+            // name
+            // 
+            name.HeaderText = "Name";
+            name.Name = "name";
+            name.ReadOnly = true;
+            // 
+            // type
+            // 
+            type.HeaderText = "Type";
+            type.Name = "type";
+            type.ReadOnly = true;
+            type.Width = 70;
+            // 
+            // size
+            // 
+            size.HeaderText = "Size (B)";
+            size.Name = "size";
+            size.ReadOnly = true;
+            size.Width = 70;
+            // 
+            // originalStatus
+            // 
+            originalStatus.HeaderText = "Original Status";
+            originalStatus.Name = "originalStatus";
+            originalStatus.ReadOnly = true;
+            originalStatus.Width = 70;
+            // 
+            // dateTaken
+            // 
+            dateTaken.HeaderText = "Date Taken";
+            dateTaken.Name = "dateTaken";
+            dateTaken.ReadOnly = true;
+            dateTaken.Width = 120;
+            // 
+            // mediaCreated
+            // 
+            mediaCreated.HeaderText = "Media Created";
+            mediaCreated.Name = "mediaCreated";
+            mediaCreated.ReadOnly = true;
+            mediaCreated.Width = 120;
+            // 
+            // dateCreated
+            // 
+            dateCreated.HeaderText = "Date Created";
+            dateCreated.Name = "dateCreated";
+            dateCreated.ReadOnly = true;
+            dateCreated.Width = 120;
+            // 
+            // fileStatus
+            // 
+            fileStatus.HeaderText = "Quality Status";
+            fileStatus.Name = "fileStatus";
+            fileStatus.ReadOnly = true;
+            // 
+            // copyStatus
+            // 
+            copyStatus.HeaderText = "Process Status";
+            copyStatus.Name = "copyStatus";
+            copyStatus.ReadOnly = true;
+            // 
             // Main
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1204, 581);
+            ClientSize = new Size(1033, 581);
             Controls.Add(panel1);
             Name = "Main";
             StartPosition = FormStartPosition.CenterScreen;
@@ -1068,17 +1328,18 @@
             ((System.ComponentModel.ISupportInitialize)dgvScan).EndInit();
             panel2.ResumeLayout(false);
             tabControl1.ResumeLayout(false);
-            tabPage1.ResumeLayout(false);
+            tabPageScan.ResumeLayout(false);
             tableLayoutPanel1.ResumeLayout(false);
             gbPicturePreview.ResumeLayout(false);
+            tableLayoutPanel4.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)picBox).EndInit();
             gbScanParams.ResumeLayout(false);
             gbScanParams.PerformLayout();
             panel3.ResumeLayout(false);
             panel3.PerformLayout();
-            tabPage5.ResumeLayout(false);
-            tabPage5.PerformLayout();
-            tabPage2.ResumeLayout(false);
+            tabPagePrefixFound.ResumeLayout(false);
+            tabPagePrefixFound.PerformLayout();
+            tabPageProcess.ResumeLayout(false);
             tableLayoutPanel2.ResumeLayout(false);
             groupBox3.ResumeLayout(false);
             groupBox3.PerformLayout();
@@ -1088,7 +1349,18 @@
             gBoxCopyImages.PerformLayout();
             gBoxCopyVideos.ResumeLayout(false);
             gBoxCopyVideos.PerformLayout();
-            tabPage4.ResumeLayout(false);
+            tabPageValidasi.ResumeLayout(false);
+            panel5.ResumeLayout(false);
+            groupBox2.ResumeLayout(false);
+            groupBox2.PerformLayout();
+            panel6.ResumeLayout(false);
+            panel6.PerformLayout();
+            groupBox5.ResumeLayout(false);
+            groupBox5.PerformLayout();
+            groupBox6.ResumeLayout(false);
+            groupBox6.PerformLayout();
+            tabPageLog.ResumeLayout(false);
+            tableLayoutPanel3.ResumeLayout(false);
             statusStrip1.ResumeLayout(false);
             statusStrip1.PerformLayout();
             ResumeLayout(false);
@@ -1099,9 +1371,9 @@
         private Panel panel1;
         private StatusStrip statusStrip1;
         private TabControl tabControl1;
-        private TabPage tabPage1;
+        private TabPage tabPageScan;
         private DataGridView dgvScan;
-        private TabPage tabPage4;
+        private TabPage tabPageLog;
         private CheckBox chkKeyIncl;
         private CheckBox chkDocument;
         private CheckBox chkVideo;
@@ -1127,18 +1399,17 @@
         private PictureBox picBox;
         private GroupBox groupBox1;
         private TableLayoutPanel tableLayoutPanel1;
-        private TabPage tabPage2;
+        private TabPage tabPageProcess;
         private TableLayoutPanel tableLayoutPanel2;
         private GroupBox groupBox3;
         private Label label2;
         private TextBox txtCopyPath;
         private Button btnCopyStop;
-        private Button btnCopy;
         private Button btnCopyBrowse;
         private ComboBox comboBoxCopySubFolder;
         private Label label3;
         private System.ComponentModel.BackgroundWorker bgWorkerCopy;
-        private TabPage tabPage5;
+        private TabPage tabPagePrefixFound;
         private CheckBox checkBoxCopyImages;
         private CheckBox checkBoxCopyDocs;
         private CheckBox checkBoxCopyVideos;
@@ -1156,9 +1427,7 @@
         private Label lblCopyPathFinalPreview;
         private Label label5;
         private Label label6;
-        private Button btnMove;
         private FolderBrowserDialog folderBrowserCopy;
-        private CheckBox checkBoxMoveDeleteFile;
         private ListBox lstBoxLog;
         private RichTextBox rtBoxLog;
         private RichTextBox richTextBoxPrefixFound;
@@ -1172,6 +1441,29 @@
         private RadioButton radioButtonProcessMove;
         private CheckBox checkBoxMoveDeleteFiles;
         private Label label8;
+        private TableLayoutPanel tableLayoutPanel3;
+        private RichTextBox rtBoxMetaFiles;
+        private TableLayoutPanel tableLayoutPanel4;
+        private TabPage tabPageValidasi;
+        private Panel panel5;
+        private GroupBox groupBox4;
+        private GroupBox groupBox2;
+        private Panel panel6;
+        private CheckBox checkBox1;
+        private RadioButton radioButton1;
+        private RadioButton radioButton2;
+        private GroupBox groupBox5;
+        private RadioButton radioButton3;
+        private RadioButton radioButton4;
+        private RadioButton radioButton5;
+        private GroupBox groupBox6;
+        private RadioButton radioButton6;
+        private RadioButton radioButton7;
+        private RadioButton radioButton8;
+        private CheckBox checkBox2;
+        private CheckBox checkBox3;
+        private Label label7;
+        private Label label9;
         private DataGridViewCheckBoxColumn checkBox;
         private DataGridViewTextBoxColumn no;
         private DataGridViewTextBoxColumn dirPath;

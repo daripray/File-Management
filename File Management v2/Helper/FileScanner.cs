@@ -17,10 +17,13 @@ namespace File_Management_v2.Helper
     {
         public string FileName { get; set; }
         public string FilePath { get; set; }
-        public string Directory { get; set; }
+        public string FileDir { get; set; }
+        public string FileRelDir { get; set; } // Relative directory path from the root scan directory
+        public string FileExt { get; set; }
+        public string FileType { get; set; } // Image, Video, Document, Other
         public long SizeBytes { get; set; }
-        public DateTime DateCreated { get; set; }
-        public DateTime DateModified { get; set; }
+        public DateTime? DateCreated { get; set; }
+        public DateTime? DateModified { get; set; }
         public DateTime? DateTaken { get; set; }
         public DateTime? MediaCreated { get; set; }
         public string FileStatus { get; set; }
@@ -76,54 +79,54 @@ namespace File_Management_v2.Helper
         /// <summary>
         /// Mengambil metadata DateTaken dan MediaCreated dari file.
         /// </summary>
-        public static FileMetadata GetFileMetadata(string filePath)
-        {
-            try
-            {
-                using (var shell = ShellObject.FromParsingName(filePath))
-                {
-                    return new FileMetadata
-                    {
-                        DateTaken = shell.Properties.System.Photo.DateTaken?.Value,
-                        MediaCreated = shell.Properties.System.Media.DateEncoded?.Value
-                    };
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[SKIP] Error reading metadata from: {filePath} => {ex.Message}");
-                return new FileMetadata();
-            }
-        }
+        //public static FileMetadata GetFileMetadata(string filePath)
+        //{
+        //    try
+        //    {
+        //        using (var shell = ShellObject.FromParsingName(filePath))
+        //        {
+        //            return new FileMetadata
+        //            {
+        //                DateTaken = shell.Properties.System.Photo.DateTaken?.Value,
+        //                MediaCreated = shell.Properties.System.Media.DateEncoded?.Value
+        //            };
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Debug.WriteLine($"[SKIP] Error reading metadata from: {filePath} => {ex.Message}");
+        //        return new FileMetadata();
+        //    }
+        //}
 
         /// <summary>
         /// Menghasilkan hasil scan lengkap dalam bentuk FileScanResult.
         /// </summary>
-        public static FileScanResult Result(string filePath)
-        {
-            try
-            {
-                var fileInfo = new FileInfo(filePath);
-                var metadata = GetFileMetadata(filePath);
+        //public static FileScanResult Result(string filePath)
+        //{
+        //    try
+        //    {
+        //        var fileInfo = new FileInfo(filePath);
+        //        var metadata = GetFileMetadata(filePath);
 
-                return new FileScanResult
-                {
-                    FileName = fileInfo.Name,
-                    FilePath = fileInfo.FullName,
-                    Directory = fileInfo.DirectoryName ?? "",
-                    SizeBytes = fileInfo.Length,
-                    DateCreated = fileInfo.CreationTime,
-                    DateModified = fileInfo.LastWriteTime,
-                    DateTaken = metadata.DateTaken,
-                    MediaCreated = metadata.MediaCreated
-                };
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[SKIP] Error building FileScanResult: {filePath} => {ex.Message}");
-                return null;
-            }
-        }
+        //        return new FileScanResult
+        //        {
+        //            FileName = fileInfo.Name,
+        //            FilePath = fileInfo.FullName,
+        //            FileDir = fileInfo.DirectoryName ?? "",
+        //            SizeBytes = fileInfo.Length,
+        //            DateCreated = fileInfo.CreationTime,
+        //            DateModified = fileInfo.LastWriteTime,
+        //            DateTaken = metadata.DateTaken,
+        //            MediaCreated = metadata.MediaCreated
+        //        };
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Debug.WriteLine($"[SKIP] Error building FileScanResult: {filePath} => {ex.Message}");
+        //        return null;
+        //    }
+        //}
 
         /// <summary>
         /// Mengecek status file apakah valid, kosong, atau corrupt.
