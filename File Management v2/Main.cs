@@ -5,7 +5,6 @@ using Microsoft.WindowsAPICodePack.Shell.Interop;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Drawing.Imaging;
 using System.IO;
@@ -62,6 +61,12 @@ namespace File_Management_v2
             _prefixDict.Clear();
 
             indexer = new DataGridColumnIndexer(dgvScan); // Inisialisasi indeks kolom berdasarkan DataGridView
+                                                          // ✅ Tambahkan event load
+            this.Load += Main_Load;
+        }
+        private void Main_Load(object sender, EventArgs e)
+        {
+            ReadLog();
         }
 
         #region PARAMETER SCAN
@@ -133,8 +138,8 @@ namespace File_Management_v2
             processStartTime = DateTime.Now;
             currentAction = Helper.Status.Action.Scan;
             currentState = Helper.Status.Process.Running;
-            addLog(" ----------------------------------- ");
-            addLog(); // akan log: "Proses SCAN dimulai."
+            WriteLog(" ----------------------------------- ");
+            WriteLog(); // akan log: "Proses SCAN dimulai."
 
             btnCancelScan.Enabled = true;
 
@@ -185,21 +190,31 @@ namespace File_Management_v2
                 {
                     if (i % 100 == 0)
                     {
-                        addLog($"Memproses file ke-{i}...");
+                        WriteLog($"Memproses file ke-{i}...");
                     }
 
                     if (bgWorkerScan.CancellationPending)
                     {
                         e.Cancel = true;
                         currentState = Helper.Status.Process.Canceled;
-                        addLog(); // akan log: "Proses dihentikan oleh pengguna."
+                        WriteLog(); // akan log: "Proses dihentikan oleh pengguna."
                         currentAction = Helper.Status.Action.None; // Reset currentAction ke None setelah dibatalkan
                         return;
                     }
 
                     var curr_FilePath = files[i];
                     var fileInfo = new FileInfo(curr_FilePath);
-                    var metadata = new MetadataHelper(curr_FilePath);
+                    MetadataHelper metadata;
+                    try
+                    {
+                        metadata = new MetadataHelper(curr_FilePath);
+                    }
+                    catch (Exception ex)
+                    {
+                        WriteLog($"[WARNING] Gagal membaca metadata: {Path.GetFileName(curr_FilePath)} ({ex.Message})");
+                        continue; // lewati file yang error
+                    }
+
                     string curr_Ext = metadata.FileExtension.TrimStart('.').ToUpper();
 
                     string curr_FileName = metadata.FileName.ToUpper();
@@ -267,7 +282,7 @@ namespace File_Management_v2
                 MessageBox.Show("Error in DoWork: " + ex.Message);
                 e.Cancel = true;
                 currentState = Helper.Status.Process.Failed;
-                addLog($"[ERROR] {ex.Message}");
+                WriteLog($"[ERROR] {ex.Message}");
                 return;
             }
 
@@ -336,13 +351,13 @@ namespace File_Management_v2
                     labelProgress.Text = $"Scan completed: {scannedCount} files found";
                     MessageBox.Show("Pemindaian selesai.\nTotal file ditampilkan: " + scannedCount, "Scan Selesai", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-                    addLog($"Finished scanning {totalScannedDatas} files.");
-                    addLog($"Matched {dgvScan.Rows.Count} files displayed.");
-                    addLog($"Scanning duration: {duration.TotalSeconds:F2} seconds.");
+                    WriteLog($"Finished scanning {totalScannedDatas} files.");
+                    WriteLog($"Matched {dgvScan.Rows.Count} files displayed.");
+                    WriteLog($"Scanning duration: {duration.TotalSeconds:F2} seconds.");
                     currentState = Helper.Status.Process.Completed;
                 }
-            addLog(); // akan log sesuai status
-            addLog(" ----------------------------------- ");
+            WriteLog(); // akan log sesuai status
+            WriteLog(" ----------------------------------- ");
             currentAction = Helper.Status.Action.None; // Reset currentAction ke None setelah selesai
         }
         private void btnCancelScan_Click(object sender, EventArgs e)
@@ -353,8 +368,8 @@ namespace File_Management_v2
                 btnCancelScan.Enabled = false;
                 currentState = Helper.Status.Process.Stopping; // Set currentState ke Stopping
 
-                addLog(); // akan log: "Proses dihentikan oleh pengguna."
-                addLog(" ----------------------------------- ");
+                WriteLog(); // akan log: "Proses dihentikan oleh pengguna."
+                WriteLog(" ----------------------------------- ");
                 currentAction = Helper.Status.Action.None; // Set currentAction ke Stop
             }
         }
@@ -369,8 +384,8 @@ namespace File_Management_v2
             // Set currentAction dan currentState untuk proses Copy / Move
             currentAction = radioButtonProcessCopy.Checked ? Helper.Status.Action.Copy : Helper.Status.Action.Move;
             currentState = Helper.Status.Process.Running;
-            addLog(" ----------------------------------- ");
-            addLog(); // akan log: "Proses COPY dimulai."
+            WriteLog(" ----------------------------------- ");
+            WriteLog(); // akan log: "Proses COPY dimulai."
 
             // Validasi form sebelum melanjutkan
             var param = new Parameters.Process();
@@ -605,7 +620,7 @@ namespace File_Management_v2
                     failCount++;
                 }
 
-                if (i % 100 == 0) addLog($"{stateLabel} file ke-{i}...");
+                if (i % 100 == 0) WriteLog($"{stateLabel} file ke-{i}...");
 
                 //addLog($"[{i + 1}/{total}] {_currRow.Cells[indexer["name"]].Value} => {_currRow.Cells[indexer["copyStatus"]].Value.ToString()}");
 
@@ -688,15 +703,15 @@ namespace File_Management_v2
                 $"\nFail: {data.FailCount}",
                 $"Hasil {currentAction}");
 
-            addLog($"Finished {currentState} {data.Total} files.");
-            addLog($"{stateLabel} {data.Total} duration: {duration.TotalSeconds:F2} seconds.");
-            addLog($"Success: {data.SuccessCount}");
-            addLog($"Skip: {data.SkipCount}");
-            addLog($"Fail: {data.FailCount}");
+            WriteLog($"Finished {currentState} {data.Total} files.");
+            WriteLog($"{stateLabel} {data.Total} duration: {duration.TotalSeconds:F2} seconds.");
+            WriteLog($"Success: {data.SuccessCount}");
+            WriteLog($"Skip: {data.SkipCount}");
+            WriteLog($"Fail: {data.FailCount}");
 
             currentState = Helper.Status.Process.Completed;
-            addLog(); // akan log sesuai status
-            addLog(" ----------------------------------- ");
+            WriteLog(); // akan log sesuai status
+            WriteLog(" ----------------------------------- ");
             currentAction = Helper.Status.Action.None; // Reset currentAction ke None setelah selesai
             //currentState = FileStatus.Process.None; // Reset currentState ke None setelah selesai
         }
@@ -708,8 +723,8 @@ namespace File_Management_v2
                 btnCopyStop.Enabled = false;
                 currentState = Helper.Status.Process.Canceled; // Set currentState ke Stopping
 
-                addLog(); // akan log: "Proses dihentikan oleh pengguna."
-                addLog(" ----------------------------------- ");
+                WriteLog(); // akan log: "Proses dihentikan oleh pengguna."
+                WriteLog(" ----------------------------------- ");
                 currentAction = Helper.Status.Action.None; // Set currentAction ke Stop
             }
         }
@@ -794,7 +809,7 @@ namespace File_Management_v2
 
 
         #region LOGGING
-        private void addLog(string message = null)
+        private void WriteLog(string message = null)
         {
             // Tangkap nilai final message dulu (hindari perubahan di thread lain)
             if (string.IsNullOrWhiteSpace(message))
@@ -868,6 +883,45 @@ namespace File_Management_v2
 
                 if (lstBoxLog.Items.Count > 500)
                     lstBoxLog.Items.RemoveAt(lstBoxLog.Items.Count - 1);
+            }
+        }
+
+        private void ReadLog()
+        {
+            try
+            {
+                string logFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "log.txt");
+
+                // Jika file log belum ada, buat file kosong
+                if (!File.Exists(logFilePath))
+                {
+                    File.Create(logFilePath).Dispose();
+                    return;
+                }
+
+                // Baca seluruh isi file log
+                var lines = File.ReadAllLines(logFilePath);
+
+                // Batas agar tidak terlalu banyak
+                var limitedLines = lines.Reverse().Take(500).Reverse().ToList();
+
+                // Tampilkan ke ListBox dan RichTextBox
+                lstBoxLog.Items.Clear();
+                rtBoxLog.Clear();
+
+                foreach (var line in limitedLines)
+                {
+                    lstBoxLog.Items.Add(line);
+                    rtBoxLog.AppendText(line + Environment.NewLine);
+                }
+
+                // Auto-scroll ke bawah
+                rtBoxLog.SelectionStart = rtBoxLog.Text.Length;
+                rtBoxLog.ScrollToCaret();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Gagal membaca file log: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
         #endregion LOGGING
