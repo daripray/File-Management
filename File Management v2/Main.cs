@@ -262,7 +262,7 @@ namespace File_Management_v2
                         FileRelDir = Path.GetRelativePath(param.SourcePath, Path.GetDirectoryName(curr_FilePath) ?? "") + Path.DirectorySeparatorChar,
                         FileExt = metadata.FileExtension,
                         FileType = metadata.MimeType, // Image, Video, Document, Other
-                        SizeBytes = metadata.FileSizeBytes?? 0,
+                        SizeBytes = metadata.FileSizeBytes ?? 0,
                         DateCreated = metadata.DateCreated,
                         DateModified = metadata.DateModified,
                         DateTaken = dateTaken,
