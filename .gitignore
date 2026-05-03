@@ -396,4 +396,3 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
-/File Management v3/Infrastructure/Metadata/MetadataService.cs
