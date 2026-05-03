@@ -1,0 +1,246 @@
+#region LOGGING
+private void WriteLog(string message = null)
+{
+    // Tangkap nilai final message dulu (hindari perubahan di thread lain)
+    if (string.IsNullOrWhiteSpace(message))
+    {
+        switch (currentState)
+        {
+            case Status.Process.Running:
+            case Status.Process.Completed:
+                message = $"Proses {currentAction.ToUpper()} {(currentState == Status.Process.Running ? "dimulai" : "selesai")}.";
+                break;
+
+            case Status.Process.Scanning:
+                message = "Memindai file...";
+                break;
+
+            case Status.Process.Copying:
+                message = "Menyalin file...";
+                break;
+
+            case Status.Process.Moving:
+                message = "Memindahkan file...";
+                break;
+
+            case Status.Process.Canceled:
+                message = "Proses dihentikan oleh pengguna.";
+                break;
+
+            case Status.Process.Error:
+                message = "Terjadi kesalahan selama proses.";
+                break;
+
+            default:
+                message = $"Status proses saat ini: {currentState}";
+                break;
+        }
+    }
+
+    string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+    string logMessage = $"[{timestamp}] {message}";
+
+    // Simpan ke file log.txt
+    try
+    {
+        string logFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "log.txt");
+        File.AppendAllText(logFilePath, logMessage + Environment.NewLine);
+    }
+    catch (Exception ex)
+    {
+        // Jika gagal simpan log ke file, tampilkan pesan error di UI log
+        logMessage += $" (Gagal simpan log ke file: {ex.Message})";
+    }
+
+    // Pastikan hanya UI update di Invoke
+    if (lstBoxLog.InvokeRequired)
+    {
+        lstBoxLog.Invoke(new MethodInvoker(() =>
+        {
+            //lstBoxLog.Items.Insert(0, logMessage); // Tambah ke atas
+            lstBoxLog.Items.Add(logMessage); // Tambah ke bawah
+            rtBoxLog.AppendText(logMessage + Environment.NewLine); // Tambah ke bawah
+
+            if (lstBoxLog.Items.Count > 500)
+                lstBoxLog.Items.RemoveAt(lstBoxLog.Items.Count - 1);
+        }));
+    }
+    else
+    {
+        //lstBoxLog.Items.Insert(0, logMessage); // Tambah ke atas
+        lstBoxLog.Items.Add(logMessage); // Tambah ke bawah
+        rtBoxLog.AppendText(logMessage + Environment.NewLine); // Tambah ke bawah
+
+        if (lstBoxLog.Items.Count > 500)
+            lstBoxLog.Items.RemoveAt(lstBoxLog.Items.Count - 1);
+    }
+}
+
+private void ReadLog()
+{
+    try
+    {
+        string logFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "log.txt");
+
+        // Jika file log belum ada, buat file kosong
+        if (!File.Exists(logFilePath))
+        {
+            File.Create(logFilePath).Dispose();
+            return;
+        }
+
+        // Baca seluruh isi file log
+        var lines = File.ReadAllLines(logFilePath);
+
+        // Batas agar tidak terlalu banyak
+        var limitedLines = lines.Reverse().Take(500).Reverse().ToList();
+
+        // Tampilkan ke ListBox dan RichTextBox
+        lstBoxLog.Items.Clear();
+        rtBoxLog.Clear();
+
+        foreach (var line in limitedLines)
+        {
+            lstBoxLog.Items.Add(line);
+            rtBoxLog.AppendText(line + Environment.NewLine);
+        }
+
+        // Auto-scroll ke bawah
+        rtBoxLog.SelectionStart = rtBoxLog.Text.Length;
+        rtBoxLog.ScrollToCaret();
+    }
+    catch (Exception ex)
+    {
+        MessageBox.Show("Gagal membaca file log: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+    }
+}
+#endregion LOGGING
+
+#region PREVIEW IMAGE
+private Image LoadImageSafe(string path)
+{
+    try
+    {
+        byte[] imageBytes = File.ReadAllBytes(path);
+        using (MemoryStream ms = new MemoryStream(imageBytes))
+        {
+            return Image.FromStream(ms);
+        }
+    }
+    catch (Exception ex)
+    {
+        // Log the error and return a placeholder image or null
+        return null;
+    }
+}
+private void dgvScan_SelectionChanged(object sender, EventArgs e)
+{
+    try
+    {
+        rtBoxMetaFiles.Clear();
+        if (currentAction != Status.Action.None) return;
+        // Hapus gambar lama
+        picBox.Image?.Dispose();
+        if (dgvScan.CurrentCell == null || dgvScan.CurrentCell.RowIndex == dgvScan.NewRowIndex)
+            return;
+
+        int rowIndex = dgvScan.CurrentCell.RowIndex;
+        DataGridViewRow row = dgvScan.Rows[rowIndex];
+
+        string filePath = Path.Combine(
+            row.Cells[indexer["dirPath"]].Value?.ToString() ?? "",
+            row.Cells[indexer["name"]].Value?.ToString() ?? ""
+        );
+
+        if (!File.Exists(filePath)) return;
+
+        if (filePath == _lastPreviewFilePath) return;
+        _lastPreviewFilePath = filePath;
+
+        string ext = Path.GetExtension(filePath).TrimStart('.').ToUpper();
+        bool isImage = globImageExts.Contains(ext);
+        bool isVideo = globVideoExts.Contains(ext);
+
+        if (isImage)
+        {
+            picBox.Image = LoadImageSafe(filePath); // Boleh dipisah untuk duplikat
+            picBox.SizeMode = PictureBoxSizeMode.Zoom;
+        }
+        else if (isVideo)
+        {
+
+        }
+        else
+        {
+            picBox.Image = null;
+        }
+
+        Debug.WriteLine("Start reading metadata...");
+        var allMetadata = FileProperty.GetAllMetadata(filePath);
+        var metadata = new MetadataHelper(filePath);
+        if (isImage)
+        {
+            string make = TryGetMetaByContains(allMetadata, "ExifIFD0.Make");
+            string model = TryGetMetaByContains(allMetadata, "ExifIFD0.Model");
+            //string dateTaken = TryGetMeta(allMetadata, "ExifSubIFD.DateTimeOriginal");
+            string dateTaken = TryGetMetaByContains(allMetadata, "Date/TimeOriginal");
+            //string dateTakenParsed = DateTime.Parse(dateTaken).ToString("yyyy-MM-dd HH:mm:ss");
+            string dateTakenParsed = dateTaken;
+            if (DateTime.TryParse(dateTakenParsed, out DateTime dt))
+            {
+                dateTakenParsed = dt.ToString("yyyy-MM-dd HH:mm:ss");
+            }
+
+
+            //rtBoxMetaFiles.AppendText($"\n-- Camera Info --\nMake: {make}\nModel: {model}\nDate Taken: {dateTaken}\nDate Taken Parsed: {dateTakenParsed}\n");
+            rtBoxMetaFiles.AppendText(
+                $"\n-- Camera Info --" +
+                $"\nCameraMake: {metadata.CameraMake}" +
+                $"\nModel: {metadata.CameraModel}" +
+                $"\nDate Taken: {metadata.DateTaken}" +
+                $"\nDate Taken Parsed: {metadata.DateTaken?.ToString("yyyy-MM-dd HH:mm:ss")}\n"
+                );
+        }
+        else if (isVideo)
+        {
+            string created = TryGetMetaByContains(allMetadata, "QuickTimeMovieHeader.Created")
+                          ?? TryGetMetaByContains(allMetadata, "Mp4.Created");
+            string duration = TryGetMetaByContains(allMetadata, "QuickTimeMovieHeader.Duration")
+                          ?? TryGetMetaByContains(allMetadata, "Mp4.Created");
+
+            //rtBoxMetaFiles.AppendText($"\n-- Video Info --\nMedia Created: {created}\nDuration: {duration}\n");
+            rtBoxMetaFiles.AppendText(
+                $"\n-- Video Info --" +
+                $"\nMedia Created: {metadata.MediaCreated?.ToString("yyyy-MM-dd HH:mm:ss")}" +
+                $"\nDuration: {metadata.DurationSeconds}\n");
+        }
+        //string meta = $"";
+        //foreach (var kv in allMetadata)
+        //{
+        //    string line = $"{kv.Key}: {kv.Value}";
+        //    rtBoxMetaFiles.AppendText(line + Environment.NewLine); // Tambah ke bawah
+        //        Debug.WriteLine(line);
+        //}
+
+        string meta = $"";
+        foreach (var kv in allMetadata)
+        {
+            string line = $"{kv.Key}: {kv.Value}";
+            rtBoxMetaFiles.AppendText(line + Environment.NewLine); // Tambah ke bawah
+            Debug.WriteLine(line);
+        }
+    }
+    catch (Exception ex)
+    {
+    }
+}
+private static string TryGetMeta(Dictionary<string, string> meta, string key)
+{
+    return meta.ContainsKey(key) ? meta[key] : "";
+}
+private static string TryGetMetaByContains(Dictionary<string, string> meta, string keyword)
+{
+    return meta.FirstOrDefault(kv => kv.Key.Contains(keyword, StringComparison.OrdinalIgnoreCase)).Value;
+}
+
+#endregion PREVIEW IMAGE

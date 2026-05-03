@@ -1,0 +1,309 @@
+8. Proses SCAN
+	- Parameter Scan:
+	#region PARAMETER SCAN
+private void txtScanPath_TextChanged(object sender, EventArgs e)
+{
+    // Aktifkan atau nonaktifkan kontrol berdasarkan apakah path scan valid
+    bool isValidPath = !string.IsNullOrWhiteSpace(txtScanPath.Text) && System.IO.Directory.Exists(txtScanPath.Text);
+    chkImage.Enabled = isValidPath;
+    chkVideo.Enabled = isValidPath;
+    chkDocument.Enabled = isValidPath;
+    chkKeyIncl.Enabled = isValidPath;
+    chkKeyExcl.Enabled = isValidPath;
+    radioAll.Enabled = isValidPath;
+    radioOri.Enabled = isValidPath;
+    radioNonOri.Enabled = isValidPath;
+    btnScan.Enabled = isValidPath;
+}
+private void btnScanBrowse_Click(object sender, EventArgs e)
+{
+    using (var folderBrowserScan = new FolderBrowserDialog())
+    {
+        folderBrowserScan.Description = "Pilih Folder untuk Scan";
+        folderBrowserScan.SelectedPath = txtScanPath.Text; // opsional
+        if (folderBrowserScan.ShowDialog() == DialogResult.OK)
+        {
+            txtScanPath.Text = folderBrowserScan.SelectedPath;
+            btnScan.Enabled = true;
+        }
+    }
+}
+private void chkImage_CheckedChanged(object sender, EventArgs e)
+{
+    // Aktifkan atau nonaktifkan kontrol terkait gambar berdasarkan checkbox
+    txtExtImage.Enabled = chkImage.Checked;
+    checkBoxCopyImages.Enabled = chkImage.Checked;
+    radioProcessImageAll.Enabled = chkImage.Checked;
+    radioProcessImageOri.Enabled = chkImage.Checked;
+    radioProcessImageNonOri.Enabled = chkImage.Checked;
+}
+private void chkVideo_CheckedChanged(object sender, EventArgs e)
+{
+    // Aktifkan atau nonaktifkan kontrol terkait video berdasarkan checkbox
+    txtExtVideo.Enabled = chkVideo.Checked;
+    checkBoxCopyVideos.Enabled = chkVideo.Checked;
+    radioProcessVideoAll.Enabled = chkVideo.Checked;
+    radioProcessVideoOri.Enabled = chkVideo.Checked;
+    radioProcessVideoNonOri.Enabled = chkVideo.Checked;
+}
+private void chkDocument_CheckedChanged(object sender, EventArgs e)
+{
+    // Aktifkan atau nonaktifkan kontrol terkait dokumen berdasarkan checkbox
+    txtExtDocument.Enabled = chkDocument.Checked;
+    checkBoxCopyDocs.Enabled = chkDocument.Checked;
+}
+private void chkKeyIncl_CheckedChanged(object sender, EventArgs e)
+{
+    txtKeyIncl.Enabled = chkKeyIncl.Checked;
+}
+private void chkKeyExcl_CheckedChanged(object sender, EventArgs e)
+{
+    txtKeyExcl.Enabled = chkKeyExcl.Checked;
+}
+#endregion PARAMETER SCAN
+
+	- Proses Scan:
+	#region SCAN FILES
+private void btnScan_Click(object sender, EventArgs e)
+{
+    checkedCount = 0; // Reset jumlah file yang diproses
+    processStartTime = DateTime.Now;
+    currentAction = Status.Action.Scan;
+    currentState = Status.Process.Running;
+    WriteLog(" ----------------------------------- ");
+    WriteLog(); // akan log: "Proses SCAN dimulai."
+
+    buttonProcess.Enabled = false;
+    btnCancelScan.Enabled = true;
+
+    if (string.IsNullOrWhiteSpace(txtScanPath.Text) || !System.IO.Directory.Exists(txtScanPath.Text))
+    {
+        MessageBox.Show("Folder sumber wajib diisi!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        return;
+    }
+
+    // 1. Kumpulkan ekstensi berdasarkan checkbox
+    globImageExts = chkImage.Checked ? txtExtImage.Text.Split(',').Select(e => e.Trim().ToUpper()).ToList() : new List<string>();
+    globVideoExts = chkVideo.Checked ? txtExtVideo.Text.Split(',').Select(e => e.Trim().ToUpper()).ToList() : new List<string>();
+    globDocExts = chkDocument.Checked ? txtExtDocument.Text.Split(',').Select(e => e.Trim().ToUpper()).ToList() : new List<string>();
+    globAllExts = new List<string>(globImageExts.Concat(globVideoExts).Concat(globDocExts).Distinct()); // Gabungkan semua ekstensi yang dipilih
+
+    // 2. Keyword Include dan Exclude
+    globIncludeKeys = chkKeyIncl.Checked ? txtKeyIncl.Text.Split(',').Select(x => x.Trim().ToUpper()).ToList() : new List<string>();
+    globExcludeKeys = chkKeyExcl.Checked ? txtKeyExcl.Text.Split(',').Select(x => x.Trim().ToUpper()).ToList() : new List<string>();
+
+    // 3. Metadata Filter (All / Ori / Non-Ori)
+    var oriFilter = Parameters.OriFilterOption.All;
+    if (radioOri.Checked) oriFilter = Parameters.OriFilterOption.Ori;
+    else if (radioNonOri.Checked) oriFilter = Parameters.OriFilterOption.NonOri;
+
+    // 4. Buat parameter scan
+    var param = new Parameters.Scan();
+    param.SourcePath = txtScanPath.Text;
+    param.OriFilter = oriFilter;
+
+    progressBarGlobal.Value = 0;
+    dgvScan.Rows.Clear();
+    btnScan.Enabled = false;
+    btnCancelScan.Enabled = true;
+
+    bgWorkerScan.RunWorkerAsync(param);
+}
+private void bgWorkerScan_DoWork(object sender, DoWorkEventArgs e)
+{
+    try
+    {
+        var param = (Parameters.Scan)e.Argument;
+        var files = System.IO.Directory.GetFiles(param.SourcePath, "*.*", SearchOption.AllDirectories);
+        var result = new List<FileInfo>();
+
+        int total = files.Length;
+        totalScannedDatas = total; // Simpan total data yang akan di-scan
+        for (int i = 0; i < total; i++)
+        {
+            if (i % 100 == 0)
+            {
+                WriteLog($"Memproses file ke-{i}...");
+            }
+
+            if (bgWorkerScan.CancellationPending)
+            {
+                e.Cancel = true;
+                currentState = Status.Process.Canceled;
+                WriteLog(); // akan log: "Proses dihentikan oleh pengguna."
+                currentAction = Status.Action.None; // Reset currentAction ke None setelah dibatalkan
+                return;
+            }
+
+            var curr_FilePath = files[i];
+            var fileInfo = new FileInfo(curr_FilePath);
+            MetadataHelper metadata;
+            try
+            {
+                metadata = new MetadataHelper(curr_FilePath);
+            }
+            catch (Exception ex)
+            {
+                WriteLog($"[WARNING] Gagal membaca metadata: {Path.GetFileName(curr_FilePath)} ({ex.Message})");
+                continue; // lewati file yang error
+            }
+
+            string curr_Ext = metadata.FileExtension.TrimStart('.').ToUpper();
+
+            string curr_FileName = metadata.FileName.ToUpper();
+            string curr_MimeType = metadata.MimeType.ToUpperInvariant();
+
+            // metadata file image
+            string curr_DateTaken = metadata.DateTaken?.ToString("yyyy-MM-dd HH:mm:ss");
+            string curr_Iso = metadata.Iso?.ToString() ?? "";
+
+            // metadata file video
+            string curr_MediaCreated = metadata.MediaCreated?.ToString("yyyy-MM-dd HH:mm:ss");
+            string curr_VideoDuration = metadata.DurationSeconds?.ToString(@"hh\:mm\:ss"); // Format durasi video
+
+            // Metadata Check
+            bool curr_IsOri = !string.IsNullOrEmpty(curr_DateTaken) || !string.IsNullOrEmpty(curr_MediaCreated);
+
+            if (!(globAllExts.Contains(curr_Ext))) continue;
+            //if (globIncludeKeys.Any() && !globIncludeKeys.Any(k => fileName.Contains(k))) continue;
+            if (chkKeyIncl.Checked && !globIncludeKeys.Any(k => curr_FileName.Contains(k))) continue; // Periksa apakah ada keyword yang harus di-include
+            if (chkKeyExcl.Checked && globExcludeKeys.Any(k => curr_FileName.Contains(k))) continue; // Periksa apakah ada keyword yang harus di-exclude
+
+            if (param.OriFilter == Parameters.OriFilterOption.Ori && !curr_IsOri) continue;
+            if (param.OriFilter == Parameters.OriFilterOption.NonOri && curr_IsOri) continue;
+
+            string curr_FileStatus = FileScanner.GetFileStatus(curr_FilePath, globImageExts, globVideoExts, globDocExts);
+
+            //metadata.FileName = fileInfo.FullName;
+            DateTime? dateTaken = null;
+            if (!string.IsNullOrWhiteSpace(curr_DateTaken) && DateTime.TryParse(curr_DateTaken, out var dtTaken))
+            {
+                dateTaken = dtTaken;
+            }
+
+            DateTime? mediaCreated = null;
+            if (!string.IsNullOrWhiteSpace(curr_MediaCreated) && DateTime.TryParse(curr_MediaCreated, out var dtMedia))
+            {
+                mediaCreated = dtMedia;
+            }
+
+            var resultItem = new FileScanResult
+            {
+                FileName = curr_FileName,
+                FilePath = curr_FilePath,
+                FileDir = Path.GetDirectoryName(curr_FilePath) ?? "",
+                FileRelDir = Path.GetRelativePath(param.SourcePath, Path.GetDirectoryName(curr_FilePath) ?? "") + Path.DirectorySeparatorChar,
+                FileExt = metadata.FileExtension,
+                FileType = metadata.MimeType, // Image, Video, Document, Other
+                SizeBytes = metadata.FileSizeBytes ?? 0,
+                DateCreated = metadata.DateCreated,
+                DateModified = metadata.DateModified,
+                DateTaken = dateTaken,
+                MediaCreated = mediaCreated,
+                IsOri = curr_IsOri,
+                FileStatus = curr_FileStatus,
+                TotalFiles = total,
+                Index = i + 1
+            };
+            bgWorkerScan.ReportProgress((int)((i + 1.0) / total * 100), resultItem);
+        }
+
+        e.Result = result;
+    }
+    catch (Exception ex)
+    {
+        MessageBox.Show("Error in DoWork: " + ex.Message);
+        e.Cancel = true;
+        currentState = Status.Process.Failed;
+        WriteLog($"[ERROR] {ex.Message}");
+        return;
+    }
+
+}
+private void bgWorkerScan_ProgressChanged(object sender, ProgressChangedEventArgs e)
+{
+    progressBarGlobal.Value = e.ProgressPercentage;
+
+    if (e.UserState is not FileScanResult result || result == null)
+        return;
+
+    dgvScan.Rows.Add(
+        false,
+        dgvScan.Rows.Count + 1,                                      // no
+        result.FileDir,                                             // path
+        result.FileName,                                             // name
+        result.FileType,       // type
+        result.SizeBytes,                                            // size
+        result.IsOri ? "ORI" : "NON-ORI",                            // originalStatus
+        result.DateTaken?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",     // dateTaken
+        result.MediaCreated?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",  // mediaCreated
+        result.DateCreated?.ToString("yyyy-MM-dd HH:mm:ss")?? "",          // dateCreated
+        result.FileStatus,                                           // fileStatus (nanti diisi proses selanjutnya)
+        ""                                                           // copyStatus (nanti diisi proses copy)
+    );
+
+    // Set ToolTipText untuk beberapa kolom (misal kolom 2: FileRelDir, 3: FileName, 7: DateTaken)
+    DataGridViewRow addedRow = dgvScan.Rows[dgvScan.Rows.Count - 1];
+    var metadata = new MetadataHelper(result.FilePath);
+    var indexer = new DataGridColumnIndexer(dgvScan);
+    addedRow.Cells[indexer["dirPath"]].ToolTipText = result.FileDir;
+    addedRow.Cells[indexer["name"]].ToolTipText = result.FilePath;
+    addedRow.Cells[indexer["dateTaken"]].ToolTipText = "Tanggal diambil: " + (result.DateTaken?.ToString("f") ?? "Tidak tersedia");
+    addedRow.Cells[indexer["mediaCreated"]].ToolTipText = "Media dibuat: " + (result.MediaCreated?.ToString("f") ?? "Tidak tersedia");
+    addedRow.Cells[indexer["originalStatus"]].ToolTipText = $"Camera Make: {metadata.CameraMake}\nCamera Model:{metadata.CameraModel}";
+
+    labelProgress.Text = $"Scanning: {result.FileDir} | Progress: {result.Index} of {result.TotalFiles} files.";
+}
+private void bgWorkerScan_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+{
+    btnScan.Enabled = true;
+    btnCancelScan.Enabled = false;
+    progressBarGlobal.Value = 100;
+    int scannedCount = dgvScan.Rows.Count;
+    processEndTime = DateTime.Now; // Set waktu akhir scan
+
+    if (e.UserState is not FileScanResult result || result == null)
+        //return;
+
+
+        if (e.Cancelled)
+        {
+            MessageBox.Show($"Proses {currentAction} dibatalkan oleh pengguna.", "Dibatalkan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            currentState = Status.Process.Canceled;
+            return;
+        }
+        else if (e.Error != null)
+        {
+            MessageBox.Show($"Kesalahan saat {currentAction}: " + e.Error.Message);
+            currentState = Status.Process.Failed;
+        }
+        else
+        {
+            TimeSpan duration = processEndTime - processStartTime;
+
+            labelProgress.Text = $"Scan completed: {scannedCount} files found";
+            MessageBox.Show("Pemindaian selesai.\nTotal file ditampilkan: " + scannedCount, "Scan Selesai", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+            WriteLog($"Finished scanning {totalScannedDatas} files.");
+            WriteLog($"Matched {dgvScan.Rows.Count} files displayed.");
+            WriteLog($"Scanning duration: {duration.TotalSeconds:F2} seconds.");
+            currentState = Status.Process.Completed;
+        }
+    WriteLog(); // akan log sesuai status
+    WriteLog(" ----------------------------------- ");
+    currentAction = Status.Action.None; // Reset currentAction ke None setelah selesai
+}
+private void btnCancelScan_Click(object sender, EventArgs e)
+{
+    if (bgWorkerScan.IsBusy)
+    {
+        bgWorkerScan.CancelAsync();
+        btnCancelScan.Enabled = false;
+        currentState = Status.Process.Stopping; // Set currentState ke Stopping
+
+        WriteLog(); // akan log: "Proses dihentikan oleh pengguna."
+        WriteLog(" ----------------------------------- ");
+        currentAction = Status.Action.None; // Set currentAction ke Stop
+    }
+}
+#endregion SCAN FILES

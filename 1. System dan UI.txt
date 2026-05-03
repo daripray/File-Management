@@ -1,0 +1,77 @@
+OK aku kasih info di app C# ku:
+Parameter:
+1. Source : lokasi folder dimanapun di drive lokal komputer
+2. Extensi dengan checkbox:
+    - Images ekstensinya: JPG, JPEG, PNG, GIF, BMP, TIFF, TIF, WEBP, HEIC, HEIF, RAW, CR2, NEF, ORF, SR2, ARW, DNG, PSD, ICO, SVG (default, editable)
+    - Videos extensinya : MP4, MOV, AVI, MKV, FLV, WMV, M4V, WEBM, MPG, MPEG, 3GP, MTS, M2TS, TS, OGV (default, editable)
+    - Documents, ext : DOC, DOCX, PDF, XLS, XLSX, PPT, PPTX, TXT, RTF, ODT, ODS, ODP, CSV, XML, HTML, HTM, JSON, MD, LOG  (default, editable)
+3. Keys : (untuk memilih prefix yang akan disertakan / diabaikan dalam pencarian
+	- Key Include : IMG_, VID_, MOV_, DSC, PXL, JPEG, PHOTO, SAMSUNG, ANDROID, DCIM, CAM, CAMERA, DCM, PIC, MV, IMG_E
+	- Key Exclude : .IMG, .VID, .MOV, SCREENSHOT, .TRASHED, .TRASH
+4. Status :
+	- All
+	- Ori
+	- Non-Ori
+5. SCAN / STOP
+6. Kolom DatagridView : checkBox, no, dirPath, name, type, size, originalStatus, dateTaken, mediaCreated, dateCreated, fileStatus (Ori/Non-Ori), copyStatus
+7. Status yang dipakai:
+internal static class Status
+{
+    internal static class Action
+    {
+        public const string None = "None";
+        public const string Scan = "Scan";
+        public const string Copy = "Copy";
+        public const string Move = "Move";
+    }
+    internal static class Process
+    {
+        public const string Pending = "Pending";
+        public const string Running = "Running";
+        public const string Completed = "Completed";
+        public const string Skipped = "Skipped";
+        public const string Failed = "Failed";
+        public const string Canceled = "Canceled";
+
+        public const string Scanning = "Scanning";
+        public const string Copying = "Copying";
+        public const string Moving = "Moving";
+        public const string Stopping = "Stopping";
+        public const string Deleting = "Deleting";
+        public const string Error = "Error";
+    }
+    internal static class Scan
+    {
+        public const string Ok = "Ok";
+        public const string Display = "Display";
+        public const string Corrupt = "Corrupt";
+        public const string Error = "Error";
+        public const string Empty = "Empty";
+    }
+    internal static class Original
+    {
+        public const string All = "All";
+        public const string Ori = "Ori";
+        public const string NonOri = "NonOri";
+    }
+    internal static class FileType
+    {
+        public const string Image = "Image";
+        public const string Video = "Video";
+        public const string Document = "Document";
+        public const string Other = "Other";
+    }
+    internal static class Result
+    {
+        public const string None = "None";
+        public const string Success = "Success";
+        public const string Failed = "Failed";
+        public const string Error = "Error";
+        public const string Exist = "Exist";
+        public const string Copied = "Copied";
+        public const string Moved = "Moved";
+        public const string Deleted = "Deleted";
+        public const string Renamed = "Renamed";
+        public const string Skipped = "Skipped";
+    }
+}
